@@ -51,7 +51,7 @@ export default function DashboardPage() {
         const missionRes = await fetch(`/api/missions?userId=${userId}`);
         const missionData = await missionRes.json();
         if (missionData.missions?.length > 0) {
-          setMission(missionData.mmissions[0]);
+          setMission(missionData.missions[0]);
         }
 
         // Charger les commits GitHub si l'utilisateur a un repo
