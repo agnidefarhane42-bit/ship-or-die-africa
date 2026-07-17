@@ -50,13 +50,13 @@ export default function Home() {
           🏴‍☠️ Première cohorte — Octobre 2026
         </div>
         <h1 className="text-4xl sm:text-6xl font-black leading-tight mb-6">
-          Ship ton SaaS en <span className="gold-text">30 jours</span>
+          Ship ton projet en <span className="gold-text">30 jours</span>
           <br />ou sors pour toujours.
         </h1>
         <p className="text-lg sm:text-xl text-base-content/60 mb-10 max-w-2xl mx-auto">
-          Pas un cours. Pas un bootcamp. Un deadline, une communauté, et la honte publique si tu abandonnes.
+          Pas un cours. Pas un bootcamp. Un deadline, une communauté, et la pression positive pour finir.
           <br /><br />
-          0 utilisateur. 0 revenu. Pas parce que l'idée est mauvaise — mais parce que personne ne peut encore utiliser ton app.
+          App, site, bot, API — tant que c'est utilisable par quelqu'un d'autre que toi.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a href="#pricing" className="btn btn-pirate btn-lg px-8">
@@ -91,7 +91,7 @@ export default function Home() {
           <div className="card-glow rounded-2xl p-6">
             <div className="text-4xl mb-4">🏝️</div>
             <h3 className="font-bold text-lg mb-2">Solo</h3>
-            <p className="text-base-content/50 text-sm">Personne ne te demande "tu as shipper quoi aujourd'hui ?". Donc tu ne ship rien.</p>
+            <p className="text-base-content/50 text-sm">Personne ne te demande "tu as bossé quoi aujourd'hui ?". Donc tu ne finis rien.</p>
           </div>
         </div>
       </section>
@@ -99,37 +99,40 @@ export default function Home() {
       {/* HOW IT WORKS */}
       <section id="how" className="px-4 sm:px-8 py-20 max-w-5xl mx-auto">
         <h2 className="text-3xl sm:text-4xl font-black text-center mb-16">
-          Ship une app tous les <span className="gold-text">30 jours</span>
+          Ship un projet tous les <span className="gold-text">30 jours</span>
         </h2>
         <div className="grid sm:grid-cols-3 gap-8">
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-error/10 border border-error/30 flex items-center justify-center text-3xl mb-4">🏴‍☠️</div>
-            <h3 className="font-bold text-xl mb-3">01 · Deviens pirate</h3>
-            <p className="text-base-content/50 text-sm">Rejoins un équipage de builders africains qui shippent. Check-ins quotidiens. Personne ne polir en silence ici.</p>
+            <h3 className="font-bold text-xl mb-3">01 · Rejoins l'équipage</h3>
+            <p className="text-base-content/50 text-sm">Un groupe de builders africains qui shippent. Check-in quotidien : "j'ai bossé sur X aujourd'hui". GitHub optionnel — ce qui compte c'est la progression, pas l'outil.</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-3xl mb-4">🎯</div>
-            <h3 className="font-bold text-xl mb-3">02 · Petit paris</h3>
-            <p className="text-base-content/50 text-sm">Une feature. Un bouton acheter. C'est tout ce qu'il faut pour valider. On te guide étape par étape jusqu'au lancement.</p>
+            <h3 className="font-bold text-xl mb-3">02 · Un petit paris</h3>
+            <p className="text-base-content/50 text-sm">Une feature qui marche. Un lien que quelqu'un peut ouvrir. C'est tout ce qu'il faut pour valider. On te guide étape par étape.</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center text-3xl mb-4">🔥</div>
-            <h3 className="font-bold text-xl mb-3">03 · N'abandonne pas</h3>
-            <p className="text-base-content/50 text-sm">Profil public. Deadline de 30 jours. Trophées quand tu ships. La honte si tu lâches. Ship, lance, répète.</p>
+            <h3 className="font-bold text-xl mb-3">03 · Tiens le cap</h3>
+            <p className="text-base-content/50 text-sm">Profil public. Deadline de 30 jours (avec 3 jours de pause pour les imprévus). Trophées quand tu ships. L'équipage te pousse quand tu faiblis.</p>
           </div>
         </div>
       </section>
 
-      {/* DEADLINE CONSEQUENCE */}
+      {/* DEADLINE — softened */}
       <section className="px-4 sm:px-8 py-16 max-w-3xl mx-auto">
-        <div className="shame-card rounded-3xl p-8 sm:p-12 text-center">
-          <div className="text-5xl mb-6">💀</div>
+        <div className="card-glow rounded-3xl p-8 sm:p-12 text-center border border-warning/20">
+          <div className="text-5xl mb-6">⚠️</div>
           <h2 className="text-2xl sm:text-3xl font-black mb-4">Deadline manquée = Overboard</h2>
+          <p className="text-base-content/60 mb-6 max-w-md mx-auto">
+            On est compréhensifs — coupure de courant, internet instable, boulot à côté. C'est pour ça que tu as <b className="text-warning">3 jours de pause</b> à utiliser quand tu veux.
+          </p>
           <ul className="text-left max-w-md mx-auto space-y-3 text-base-content/60">
-            <li className="flex gap-3"><span className="text-error">✕</span> Hall of shame dans le groupe public</li>
-            <li className="flex gap-3"><span className="text-error">✕</span> Exclu de la communauté à jamais</li>
-            <li className="flex gap-3"><span className="text-error">✕</span> Marqué publiquement "overboard"</li>
-            <li className="flex gap-3"><span className="text-error">✕</span> Pas de remboursement</li>
+            <li className="flex gap-3"><span className="text-warning">⚠️</span> Profil marqué "overboard" (en mémoire, pas en honte)</li>
+            <li className="flex gap-3"><span className="text-warning">⚠️</span> Accès suspendu à la communauté</li>
+            <li className="flex gap-3"><span className="text-warning">⚠️</span> Pas de remboursement</li>
+            <li className="flex gap-3"><span className="text-success">✓</span> Tu peux revenir dans une prochaine cohorte (en repayant)</li>
           </ul>
         </div>
       </section>
@@ -140,10 +143,10 @@ export default function Home() {
         <div className="grid sm:grid-cols-2 gap-4">
           {[
             { icon: "💬", text: "Groupe Telegram privé de la cohorte" },
-            { icon: "📊", text: "Profil public avec toutes tes apps" },
+            { icon: "📊", text: "Profil public avec tous tes projets" },
             { icon: "🏆", text: "Trophées automatiques (first commit, first deploy...)" },
-            { icon: "🔗", text: "Connexion GitHub pour tracker tes commits" },
-            { icon: "⏰", text: "Deadline de 30 jours gamifiée" },
+            { icon: "🔗", text: "Connexion GitHub (optionnel) pour tracker tes commits" },
+            { icon: "⏰", text: "Deadline de 30 jours + 3 jours de pause" },
             { icon: "🤝", text: "Accountability quotidienne avec d'autres builders" },
           ].map((item, i) => (
             <div key={i} className="card-glow rounded-xl p-5 flex items-center gap-4">
@@ -154,21 +157,49 @@ export default function Home() {
         </div>
       </section>
 
+      {/* WHO IS THIS FOR */}
+      <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-black text-center mb-12">C'est pour qui ?</h2>
+        <div className="grid sm:grid-cols-2 gap-6">
+          <div className="card-glow rounded-2xl p-6">
+            <div className="text-3xl mb-3">✅</div>
+            <h3 className="font-bold text-lg mb-3">Pour toi si...</h3>
+            <ul className="space-y-2 text-sm text-base-content/60">
+              <li>• Tu as un projet en cours que tu ne finis jamais</li>
+              <li>• Tu codes seul et personne ne te push</li>
+              <li>• Tu as besoin d'un deadline pour avancer</li>
+              <li>• App, site, bot, API, outil — tous les projets sont bienvenus</li>
+              <li>• Tu veux faire partie d'une communauté de builders africains</li>
+            </ul>
+          </div>
+          <div className="card-glow rounded-2xl p-6">
+            <div className="text-3xl mb-3">❌</div>
+            <h3 className="font-bold text-lg mb-3">Pas pour toi si...</h3>
+            <ul className="space-y-2 text-sm text-base-content/60">
+              <li>• Tu cherches un cours ou un tuto</li>
+              <li>• Tu veux qu'on code à ta place</li>
+              <li>• Tu n'as pas 1h par jour à consacrer</li>
+              <li>• Tu n'as pas encore de projet en tête</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* PRICING */}
       <section id="pricing" className="px-4 sm:px-8 py-20 max-w-3xl mx-auto">
         <div className="card-glow rounded-3xl p-8 sm:p-12 text-center">
           <div className="badge badge-warning mb-6 text-xs font-bold uppercase">Early Bird — 30 places</div>
           <h2 className="text-4xl font-black mb-2">10.000 FCFA</h2>
           <p className="text-base-content/40 mb-2 line-through">25.000 FCFA (prix normal)</p>
-          <p className="text-base-content/60 mb-8 text-sm">Paiement unique · ~15$ · Pas de remboursement</p>
+          <p className="text-base-content/60 mb-8 text-sm">Paiement unique · ~15$ · Mobile Money ou carte</p>
           
           <div className="text-left max-w-md mx-auto space-y-3 mb-10">
             <p className="flex gap-3"><span className="text-success">✓</span> Accès communauté privée Telegram</p>
-            <p className="flex gap-3"><span className="text-success">✓</span> Mission gamifiée de 30 jours</p>
-            <p className="flex gap-3"><span className="text-success">✓</span> Profil public avec tes apps</p>
-            <p className="flex gap-3"><span className="text-success">✓</span> Tracker GitHub automatique</p>
+            <p className="flex gap-3"><span className="text-success">✓</span> Mission gamifiée de 30 jours + 3 jours de pause</p>
+            <p className="flex gap-3"><span className="text-success">✓</span> Profil public avec tes projets</p>
+            <p className="flex gap-3"><span className="text-success">✓</span> Tracker GitHub (optionnel) ou check-in manuel</p>
             <p className="flex gap-3"><span className="text-success">✓</span> Trophées et badges</p>
-            <p className="flex gap-3"><span className="text-success">✓</span> Paiement Mobile Money ou carte</p>
+            <p className="flex gap-3"><span className="text-success">✓</span> Paiement Mobile Money (MoMo, Orange Money, Wave) ou carte</p>
           </div>
 
           {!submitted ? (
@@ -184,13 +215,32 @@ export default function Home() {
               <button type="submit" disabled={loading} className="btn btn-pirate w-full btn-lg">
                 {loading ? "..." : "🏴‍☠️ Réserver ma place"}
               </button>
-              <p className="text-xs text-base-content/40 mt-4">Tu paies uniquement quand la cohorte démarre.</p>
+              <p className="text-xs text-base-content/40 mt-4">Tu paies uniquement quand la cohorte démarre. Pas avant.</p>
             </form>
           ) : (
             <div className="max-w-sm mx-auto alert alert-success">
               <span>✅ {message}</span>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="px-4 sm:px-8 py-16 max-w-3xl mx-auto">
+        <h2 className="text-3xl font-black text-center mb-12">Questions fréquentes</h2>
+        <div className="space-y-4">
+          {[
+            { q: "Je n'utilise pas GitHub, je peux quand même participer ?", a: "Oui. Le check-in manuel suffit : 'j'ai bossé sur X aujourd'hui'. GitHub est optionnel pour ceux qui veulent tracker automatiquement leurs commits." },
+            { q: "C'est seulement pour le SaaS ?", a: "Non. App mobile, site web, bot WhatsApp, API, outil interne — tout compte. Tant que quelqu'un d'autre que toi peut l'utiliser." },
+            { q: "Et si j'ai une coupure de courant ou pas d'internet ?", a: "Tu as 3 jours de pause à utiliser quand tu veux. Pas besoin de justifier. Après 3 jours non utilisés, ils sont perdus." },
+            { q: "Je paie comment ?", a: "Mobile Money (MoMo, Orange Money, Wave) ou carte bancaire via FedaPay. Le paiement se fait quand la cohorte démarre, pas à la pré-inscription." },
+            { q: "Il y a combien de places ?", a: "30 places pour la première cohorte. Petit groupe = meilleure accountability." },
+          ].map((item, i) => (
+            <div key={i} className="card-glow rounded-xl p-5">
+              <h3 className="font-bold mb-2">{item.q}</h3>
+              <p className="text-base-content/60 text-sm">{item.a}</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -203,7 +253,7 @@ export default function Home() {
           </div>
           <div>
             <div className="text-3xl font-black gold-text">∞</div>
-            <div className="text-sm text-base-content/40">apps possibles</div>
+            <div className="text-sm text-base-content/40">projets possibles</div>
           </div>
           <div>
             <div className="text-3xl font-black gold-text">0</div>

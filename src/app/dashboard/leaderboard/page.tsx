@@ -70,9 +70,9 @@ export default function LeaderboardPage() {
 
       {/* Hall of shame */}
       <div className="shame-card rounded-2xl p-6">
-        <h2 className="font-bold text-lg text-error mb-3">💀 Hall of Shame</h2>
+        <h2 className="font-bold text-lg text-error mb-3">💀 In Memoriam</h2>
         <p className="text-sm text-base-content/50">
-          Ceux qui ont raté leur deadline. Exclus de la communauté à jamais. Pas de seconde chance.
+          Ceux qui ont raté leur deadline. On se souvient d'eux. Ils peuvent revenir dans une prochaine cohorte.
         </p>
         <div className="mt-4 flex items-center gap-3">
           <span className="text-2xl">💀</span>

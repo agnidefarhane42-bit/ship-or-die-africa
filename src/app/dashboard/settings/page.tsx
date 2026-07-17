@@ -33,7 +33,7 @@ export default function SettingsPage() {
       {/* GitHub */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">🔗 Connexion GitHub</h2>
-        <p className="text-sm text-base-content/50">Connecte ton GitHub pour tracker automatiquement tes commits et débloquer des trophées.</p>
+        <p className="text-sm text-base-content/50">Connecte ton GitHub (optionnel) pour tracker automatiquement tes commits. Tu peux aussi faire un check-in manuel.</p>
         <div className="flex items-center justify-between p-4 bg-base-content/5 rounded-xl">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-base-content/10 flex items-center justify-center text-xl">🐙</div>

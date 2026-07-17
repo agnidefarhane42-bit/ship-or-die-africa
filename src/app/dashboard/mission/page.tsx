@@ -10,7 +10,7 @@ export default function MissionPage() {
     url: "https://vendia-ai.vercel.app",
     status: "IN_PROGRESS",
     day: 12,
-    deadline: "15 août 2026",
+    deadline: "15 août 2026 · 3 jours de pause disponibles",
   });
 
   return (
