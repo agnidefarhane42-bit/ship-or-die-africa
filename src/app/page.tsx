@@ -5,15 +5,31 @@ import { useState } from "react";
 export default function Home() {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email) setSubmitted(true);
+    if (!email) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/preorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      setMessage(data.message || data.error || "");
+      if (res.ok) setSubmitted(true);
+    } catch {
+      setMessage("Erreur réseau. Réessaie.");
+    }
+    setLoading(false);
   };
 
   return (
     <main className="hero-bg min-h-screen">
-      {/* ===== NAVBAR ===== */}
+      {/* NAVBAR */}
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
         <div className="flex-1">
           <span className="text-2xl font-black tracking-tight">
@@ -28,7 +44,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* ===== HERO ===== */}
+      {/* HERO */}
       <section className="px-4 sm:px-8 pt-16 pb-20 max-w-4xl mx-auto text-center section-fade">
         <div className="badge badge-error gap-2 mb-6 text-xs font-semibold uppercase tracking-wider">
           🏴‍☠️ Première cohorte — Octobre 2026
@@ -40,7 +56,7 @@ export default function Home() {
         <p className="text-lg sm:text-xl text-base-content/60 mb-10 max-w-2xl mx-auto">
           Pas un cours. Pas un bootcamp. Un deadline, une communauté, et la honte publique si tu abandonnes.
           <br /><br />
-          0 utilisateurs. 0 revenu. Pas parce que l'idée est mauvaise — mais parce que personne ne peut encore utiliser ton app.
+          0 utilisateur. 0 revenu. Pas parce que l'idée est mauvaise — mais parce que personne ne peut encore utiliser ton app.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a href="#pricing" className="btn btn-pirate btn-lg px-8">
@@ -55,7 +71,7 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ===== PROBLEM ===== */}
+      {/* PROBLEM */}
       <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black mb-4">"Je suis à deux semaines du lancement."</h2>
@@ -80,7 +96,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== HOW IT WORKS ===== */}
+      {/* HOW IT WORKS */}
       <section id="how" className="px-4 sm:px-8 py-20 max-w-5xl mx-auto">
         <h2 className="text-3xl sm:text-4xl font-black text-center mb-16">
           Ship une app tous les <span className="gold-text">30 jours</span>
@@ -104,7 +120,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== DEADLINE CONSEQUENCE ===== */}
+      {/* DEADLINE CONSEQUENCE */}
       <section className="px-4 sm:px-8 py-16 max-w-3xl mx-auto">
         <div className="shame-card rounded-3xl p-8 sm:p-12 text-center">
           <div className="text-5xl mb-6">💀</div>
@@ -118,7 +134,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== WHAT'S INCLUDED ===== */}
+      {/* WHAT'S INCLUDED */}
       <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
         <h2 className="text-3xl font-black text-center mb-12">Ce que tu obtiens</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -138,7 +154,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== PRICING ===== */}
+      {/* PRICING */}
       <section id="pricing" className="px-4 sm:px-8 py-20 max-w-3xl mx-auto">
         <div className="card-glow rounded-3xl p-8 sm:p-12 text-center">
           <div className="badge badge-warning mb-6 text-xs font-bold uppercase">Early Bird — 30 places</div>
@@ -165,20 +181,20 @@ export default function Home() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="input input-bordered w-full bg-base-200 mb-4"
               />
-              <button type="submit" className="btn btn-pirate w-full btn-lg">
-                🏴‍☠️ Réserver ma place
+              <button type="submit" disabled={loading} className="btn btn-pirate w-full btn-lg">
+                {loading ? "..." : "🏴‍☠️ Réserver ma place"}
               </button>
               <p className="text-xs text-base-content/40 mt-4">Tu paies uniquement quand la cohorte démarre.</p>
             </form>
           ) : (
             <div className="max-w-sm mx-auto alert alert-success">
-              <span>✅ Place réservée ! On te contacte au lancement.</span>
+              <span>✅ {message}</span>
             </div>
           )}
         </div>
       </section>
 
-      {/* ===== STATS BAR ===== */}
+      {/* STATS BAR */}
       <section className="px-4 sm:px-8 py-12 max-w-4xl mx-auto">
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
@@ -196,7 +212,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== FOOTER ===== */}
+      {/* FOOTER */}
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-20">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
