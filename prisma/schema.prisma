@@ -1,0 +1,144 @@
+// Prisma schema — MongoDB
+// Ship or Die Africa: Communauté de builders africains francophones
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth.js (NextAuth) models ----------
+model User {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+
+  // ---- Ship or Die core ----
+  role          Role      @default(USER)
+  githubUsername String?
+  bio           String?
+  avatarUrl     String?
+
+  // ---- Cohorte ----
+  cohortId      String?   @db.ObjectId
+  joinedAt      DateTime  @default(now())
+
+  accounts      Account[]
+  sessions      Session[]
+  missions      Mission[]
+  payments      Payment[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+// ---------- Mission (projet à shipper en 30j) ----------
+model Mission {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+
+  title       String
+  description String
+  url         String?
+  repoUrl     String?
+
+  status      MissionStatus @default(IN_PROGRESS)
+  startedAt   DateTime @default(now())
+  deadline    DateTime
+  shippedAt   DateTime?
+
+  trophies    Trophy[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum MissionStatus {
+  IN_PROGRESS
+  SHIPPED
+  FAILED
+}
+
+// ---------- Trophées ----------
+model Trophy {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  missionId   String   @db.ObjectId
+  mission     Mission  @relation(fields: [missionId], references: [id])
+
+  type        TrophyType
+  awardedAt   DateTime @default(now())
+}
+
+enum TrophyType {
+  FIRST_COMMIT
+  FIRST_DEPLOY
+  FIFTY_COMMITS
+  HUNDRED_COMMITS
+  SHIPPED
+  EARLY_BIRD
+}
+
+// ---------- Paiement ----------
+model Payment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  user        User     @relation(fields: [userId], references: [id])
+
+  amount      Int
+  status      PaymentStatus @default(PENDING)
+  fedapayId   String?
+  paidAt      DateTime?
+
+  createdAt   DateTime @default(now())
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ---------- NextAuth ----------
+model Account {
+  id                String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id])
+}
+
+model Session {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionToken String   @unique
+  userId       String   @db.ObjectId
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model VerificationToken {
+  id      String   @id @default(auto()) @map("_id") @db.ObjectId
+  identifier String
+  token      String
+  expires    DateTime
+}
