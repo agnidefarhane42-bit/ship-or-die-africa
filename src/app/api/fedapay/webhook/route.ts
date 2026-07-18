@@ -1,29 +1,54 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
-// ── Webhook FedaPay ──────────────────────────────────────────────────────────
-// Reçoit les événements de paiement de FedaPay (transaction.approved, etc.)
-//
-// ⚠️ Vérification de signature :
-// Le SDK FedaPay (fedapay@1.2.5) ne fournit pas de méthode native pour vérifier
-// la signature du webhook côté Node.js. Il faudrait comparer le header
-// `X-FedaPay-Signature` avec un HMAC-SHA256 du body raw en utilisant
-// FEDAPAY_WEBHOOK_SECRET. Pour l'instant, on accepte le payload tel quel
-// car la route n'exécute aucune action destructive — elle crée/met à jour
-// un Payment uniquement si la transaction est marquée payée.
-// À sécuriser en production avec un middleware de vérification de signature.
-// ────────────────────────────────────────────────────────────────────────────
+/**
+ * Vérifie la signature du webhook FedaPay.
+ * Le header X-FEDAPAY-SIGNATURE contient un HMAC-SHA256 du body raw,
+ * calculé avec FEDAPAY_WEBHOOK_SECRET.
+ */
+function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
+  if (!signatureHeader) return false;
+
+  const secret = process.env.FEDAPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("FEDAPAY_WEBHOOK_SECRET non configuré");
+    return false;
+  }
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(rawBody)
+    .digest("hex");
+
+  try {
+    const a = Buffer.from(expected);
+    const b = Buffer.from(signatureHeader);
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // 1. Récupérer le body brut (pas req.json() qui consomme le stream)
+    const rawBody = await req.text();
+
+    // 2. Vérifier la signature
+    const signature = req.headers.get("X-FEDAPAY-SIGNATURE");
+    if (!verifySignature(rawBody, signature)) {
+      return NextResponse.json({ error: "Signature invalide" }, { status: 401 });
+    }
+
+    // 3. Parser le JSON manuellement
+    const body = JSON.parse(rawBody);
 
     // FedaPay envoie { event: "...", data: { ... } }
-    // La structure peut varier — on gère plusieurs formats possibles
     const entity = body?.data?.entity || body?.entity || body?.data || body;
     const eventType = body?.event || body?.type || "";
 
-    // On ne traite que les événements de paiement approuvé
     if (!eventType.includes("approved") && !eventType.includes("paid") && !eventType.includes("transaction")) {
       return NextResponse.json({ received: true, ignored: true });
     }
@@ -46,7 +71,6 @@ export async function POST(req: NextRequest) {
       entity?.status === "completed";
 
     if (!isPaid) {
-      // Paiement en attente ou échoué — on enregistre quand même
       await prisma.payment.upsert({
         where: { fedapayId },
         create: {
