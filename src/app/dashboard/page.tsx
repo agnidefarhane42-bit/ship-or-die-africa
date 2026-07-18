@@ -11,6 +11,7 @@ type Mission = {
   status: string;
   startedAt: string;
   deadline: string;
+  commitsByDay?: Record<string, number> | null;
   trophies: { id: string; type: string }[];
 };
 
@@ -42,13 +43,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
-    const userId = (session.user as any).id;
-    if (!userId) return;
 
     (async () => {
       try {
         // Charger la mission de l'utilisateur
-        const missionRes = await fetch(`/api/missions?userId=${userId}`);
+        const missionRes = await fetch(`/api/missions`);
         const missionData = await missionRes.json();
         if (missionData.missions?.length > 0) {
           setMission(missionData.missions[0]);
@@ -96,10 +95,25 @@ export default function DashboardPage() {
   const trophyCount = mission?.trophies?.length || 0;
   const commitCount = commits.length;
 
+  // Heatmap basée sur commitsByDay (vraies données) ou toute grise si absent
   const heatColors = ["bg-base-content/5", "bg-success/20", "bg-success/40", "bg-success/60", "bg-success"];
+
+  function getHeatLevel(commitsOnDay: number | undefined): number {
+    if (!commitsOnDay || commitsOnDay === 0) return 0;
+    if (commitsOnDay <= 2) return 1;
+    if (commitsOnDay <= 5) return 2;
+    if (commitsOnDay <= 10) return 3;
+    return 4;
+  }
+
   const heatmap = Array.from({ length: 30 }, (_, i) => {
     if (i >= day) return 0;
-    return Math.floor(Math.random() * 4) + 1; // sera remplacé par vraies données plus tard
+    if (!mission?.commitsByDay) return 0; // pas encore synchronisé → gris
+    // Calculer la date du jour i+1 de la mission
+    const dayDate = new Date(mission.startedAt);
+    dayDate.setDate(dayDate.getDate() + i);
+    const key = dayDate.toISOString().substring(0, 10);
+    return getHeatLevel(mission.commitsByDay[key]);
   });
 
   const trophyDefs = [
@@ -123,7 +137,7 @@ export default function DashboardPage() {
           </p>
         </div>
         {mission && (
-          <div className="badge badge-warning badge-lg gap-2 font-bold">⏰ {daysLeft} jours</div>
+          <div className="badge badge-warning badge-lg gap-2 font-bold">⏰ {daysLeft} jour{daysLeft > 1 ? "s" : ""}</div>
         )}
       </div>
 
@@ -189,6 +203,11 @@ export default function DashboardPage() {
               {heatColors.map((c, i) => <div key={i} className={`w-4 h-4 rounded ${c}`} />)}
               <span>Plus</span>
             </div>
+            {!mission.commitsByDay && (
+              <p className="text-xs text-base-content/30 mt-2 italic">
+                La heatmap se remplira après la première synchronisation GitHub.
+              </p>
+            )}
           </div>
 
           {/* TWO COLUMNS */}

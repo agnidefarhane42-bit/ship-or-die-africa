@@ -65,6 +65,11 @@ model Mission {
   currentStreak Int     @default(0)
   lastCommitAt DateTime?
 
+  // ---- Historique des commits par jour ----
+  // Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
+  // Construit à partir des dates de commits lors de la synchronisation
+  commitsByDay  Json?
+
   trophies    Trophy[]
 
   createdAt   DateTime @default(now())

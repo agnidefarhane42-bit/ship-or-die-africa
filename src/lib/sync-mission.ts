@@ -5,8 +5,9 @@
 // Il synchronise les missions avec l'API GitHub :
 //   1. Récupère les commits du repo lié à la mission
 //   2. Calcule le nombre total de commits, le streak et la date du dernier commit
-//   3. Attribue les trophées correspondants (sans doublon)
-//   4. Marque la mission FAILED si la deadline est dépassée
+//   3. Construit l'historique commitsByDay pour la heatmap
+//   4. Attribue les trophées correspondants (sans doublon)
+//   5. Marque la mission FAILED si la deadline est dépassée
 //
 // Appelé par le cron /api/cron/sync-missions (toutes les heures).
 // ============================================================================
@@ -100,6 +101,41 @@ function calculateStreak(commitDates: string[]): number {
 }
 
 /**
+ * Construit un objet commitsByDay à partir des dates de commits.
+ * Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
+ * Ne couvre que la période de la mission (startedAt → deadline).
+ */
+function buildCommitsByDay(
+  commitDates: string[],
+  startedAt: Date,
+  deadline: Date
+): Record<string, number> {
+  const result: Record<string, number> = {};
+
+  // Compter les commits par jour
+  const counts: Record<string, number> = {};
+  for (const d of commitDates) {
+    const day = d.substring(0, 10);
+    counts[day] = (counts[day] || 0) + 1;
+  }
+
+  // Remplir tous les jours de la mission (startedAt à deadline)
+  const start = new Date(startedAt);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(deadline);
+  end.setHours(0, 0, 0, 0);
+
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const key = cursor.toISOString().substring(0, 10);
+    result[key] = counts[key] || 0;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  return result;
+}
+
+/**
  * Attribue un trophée à une mission s'il n'existe pas déjà.
  */
 async function awardTrophyIfNew(missionId: string, type: string): Promise<void> {
@@ -136,6 +172,13 @@ export async function syncMission(missionId: string): Promise<void> {
     : null;
   const streak = calculateStreak(commits.map((c) => c.date));
 
+  // Construire commitsByDay pour la heatmap
+  const commitsByDay = buildCommitsByDay(
+    commits.map((c) => c.date),
+    mission.startedAt,
+    mission.deadline
+  );
+
   // Mettre à jour la mission
   await prisma.mission.update({
     where: { id: missionId },
@@ -143,6 +186,7 @@ export async function syncMission(missionId: string): Promise<void> {
       commitCount,
       currentStreak: streak,
       lastCommitAt,
+      commitsByDay,
     },
   });
 
