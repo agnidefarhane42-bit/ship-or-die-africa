@@ -18,7 +18,9 @@ export async function sendEmail(to: string, subject: string, html: string) {
     const { data, error } = await getClient().emails.send({
       from: FROM_EMAIL,
       to,
+      subject,
       html,
+      text: html.replace(/<[^>]*>/g, ""),
     });
     if (error) throw error;
     return data;
