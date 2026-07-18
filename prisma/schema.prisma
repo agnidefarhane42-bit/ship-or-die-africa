@@ -22,6 +22,7 @@ model User {
   // ---- Ship or Die core ----
   role          Role      @default(USER)
   githubUsername String?
+  githubVerified Boolean  @default(false)
   bio           String?
   avatarUrl     String?
 
@@ -58,6 +59,11 @@ model Mission {
   startedAt   DateTime @default(now())
   deadline    DateTime
   shippedAt   DateTime?
+
+  // ---- Gamification (mis à jour par sync-mission.ts) ----
+  commitCount  Int      @default(0)
+  currentStreak Int     @default(0)
+  lastCommitAt DateTime?
 
   trophies    Trophy[]
 

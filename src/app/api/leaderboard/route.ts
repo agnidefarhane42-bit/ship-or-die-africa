@@ -21,18 +21,19 @@ export async function GET() {
           (Date.now() - mission.startedAt.getTime()) / (1000 * 60 * 60 * 24)
         );
         const isOverboard = day > 30 && mission.status !== "SHIPPED";
-        const trophies = (mission as any).trophies?.length || 0;
+        const trophies = mission.trophies?.length || 0;
         return {
           id: u.id,
           name: u.name || "Anonyme",
           project: mission.title,
-          commits: 0,
+          commits: mission.commitCount,
           day: Math.min(day, 30),
-          streak: 0,
+          streak: mission.currentStreak,
           shipped: mission.status === "SHIPPED",
           overboard: isOverboard,
           trophies,
           githubUsername: u.githubUsername,
+          githubVerified: u.githubVerified,
         };
       })
       .filter(Boolean)
