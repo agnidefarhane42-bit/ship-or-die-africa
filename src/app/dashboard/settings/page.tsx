@@ -1,10 +1,61 @@
 "use client";
-import { useState } from "react";
+
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
-  const [name, setName] = useState("Agnide");
-  const [bio, setBio] = useState("Dev full-stack, Bénin. Je shippe ou je meurs.");
-  const [github, setGithub] = useState("agnidefarhane42-bit");
+  const { data: session, status } = useSession();
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [github, setGithub] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
+  // Pré-remplir avec les données de la session
+  useEffect(() => {
+    if (session?.user) {
+      setName(session.user.name || "");
+      setGithub((session.user as any).githubUsername || "");
+    }
+  }, [session]);
+
+  const handleSave = async () => {
+    const userId = (session?.user as any)?.id;
+    if (!userId) return;
+
+    setSaving(true);
+    setError("");
+    setSuccess(false);
+
+    try {
+      const res = await fetch("/api/auth/update-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, name, bio, githubUsername: github }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.error || "Erreur lors de la sauvegarde");
+      } else {
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      }
+    } catch {
+      setError("Erreur réseau. Réessaie.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (status === "loading") {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <span className="loading loading-spinner loading-lg text-warning"></span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -13,65 +64,85 @@ export default function SettingsPage() {
       {/* Profile */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">Profil public</h2>
-        <div className="flex items-center gap-4">
-          <div className="avatar placeholder">
-            <div className="w-16 rounded-full bg-warning text-base-100"><span className="text-2xl">A</span></div>
+
+        {error && (
+          <div className="alert alert-error text-sm">
+            <span>{error}</span>
           </div>
-          <button className="btn btn-ghost btn-sm">Changer l'avatar</button>
-        </div>
+        )}
+        {success && (
+          <div className="alert alert-success text-sm">
+            <span>✅ Profil sauvegardé !</span>
+          </div>
+        )}
+
         <div>
-          <label className="label"><span className="label-text text-base-content/60">Nom</span></label>
-          <input className="input input-bordered w-full bg-base-200" value={name} onChange={(e) => setName(e.target.value)} />
+          <label className="label">
+            <span className="label-text text-base-content/60">Nom</span>
+          </label>
+          <input
+            className="input input-bordered w-full bg-base-200"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ton nom"
+          />
         </div>
+
         <div>
-          <label className="label"><span className="label-text text-base-content/60">Bio</span></label>
-          <textarea className="textarea textarea-bordered w-full bg-base-200" rows={2} value={bio} onChange={(e) => setBio(e.target.value)} />
+          <label className="label">
+            <span className="label-text text-base-content/60">Bio</span>
+          </label>
+          <textarea
+            className="textarea textarea-bordered w-full bg-base-200"
+            rows={2}
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            placeholder="Dev full-stack, Bénin. Je shippe ou je meurs."
+          />
         </div>
-        <button className="btn btn-gold btn-sm">💾 Sauvegarder</button>
+
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn btn-warning btn-sm"
+        >
+          {saving ? "Sauvegarde..." : "💾 Sauvegarder"}
+        </button>
       </div>
 
       {/* GitHub */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">🔗 Connexion GitHub</h2>
-        <p className="text-sm text-base-content/50">Connecte ton GitHub (optionnel) pour tracker automatiquement tes commits. Tu peux aussi faire un check-in manuel.</p>
-        <div className="flex items-center justify-between p-4 bg-base-content/5 rounded-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-base-content/10 flex items-center justify-center text-xl">🐙</div>
-            <div>
-              <p className="font-bold text-sm">{github}</p>
-              <p className="text-xs text-success">✓ Connecté</p>
-            </div>
-          </div>
-          <button className="btn btn-ghost btn-sm">Déconnecter</button>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div className="card-glow rounded-2xl p-6 space-y-4">
-        <h2 className="font-bold text-lg">🔔 Notifications</h2>
-        {[
-          { label: "Rappel quotidien (Telegram)", desc: "Te rappelle de committer chaque jour", on: true },
-          { label: "Alerte deadline (J-7, J-3, J-1)", desc: "Te prévient quand la deadline approche", on: true },
-          { label: "Nouveau trophée débloqué", desc: "Notification quand tu gagnes un badge", on: true },
-          { label: "Someone shipped", desc: "Quand un pirate de ta cohorte ship", on: false },
-        ].map((n, i) => (
-          <div key={i} className="flex items-center justify-between border-b border-base-content/10 pb-3 last:border-0">
-            <div>
-              <p className="font-medium text-sm">{n.label}</p>
-              <p className="text-xs text-base-content/40">{n.desc}</p>
-            </div>
-            <input type="checkbox" className="toggle toggle-warning" defaultChecked={n.on} />
-          </div>
-        ))}
-      </div>
-
-      {/* DANGER */}
-      <div className="shame-card rounded-2xl p-6">
-        <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
-        <p className="text-sm text-base-content/50 mb-4">
-          Si tu quittes la cohorte, tu es marqué overboard et exclu à jamais. Pas de retour.
+        <p className="text-sm text-base-content/50">
+          Connecte ton GitHub pour tracker automatiquement tes commits sur ta mission.
         </p>
-        <button className="btn btn-error btn-sm">Abandonner la mission</button>
+        <div>
+          <label className="label">
+            <span className="label-text text-base-content/60">Username GitHub</span>
+          </label>
+          <input
+            className="input input-bordered w-full bg-base-200"
+            value={github}
+            onChange={(e) => setGithub(e.target.value)}
+            placeholder="username (sans @)"
+          />
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="btn btn-ghost btn-sm"
+        >
+          {saving ? "Sauvegarde..." : "💾 Sauvegarder GitHub"}
+        </button>
+      </div>
+
+      {/* Email (lecture seule) */}
+      <div className="card-glow rounded-2xl p-6 space-y-4">
+        <h2 className="font-bold text-lg">📧 Email</h2>
+        <p className="text-base-content/70 font-mono text-sm bg-base-200 rounded-xl px-4 py-3">
+          {session?.user?.email || "—"}
+        </p>
+        <p className="text-xs text-base-content/40">L'email ne peut pas être modifié.</p>
       </div>
     </div>
   );
