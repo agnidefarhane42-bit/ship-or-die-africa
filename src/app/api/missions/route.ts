@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 // Créer une mission
 export async function POST(req: NextRequest) {
   try {
-    const { userId, title, description, repoUrl, url } = await req.json();
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
 
-    if (!userId || !title) {
-      return NextResponse.json({ error: "userId et title requis" }, { status: 400 });
+    const { title, description, repoUrl, url } = await req.json();
+
+    if (!title) {
+      return NextResponse.json({ error: "title requis" }, { status: 400 });
     }
 
     const startedAt = new Date();
@@ -16,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const mission = await prisma.mission.create({
       data: {
-        userId,
+        userId: session.user.id,
         title,
         description: description || "",
         repoUrl: repoUrl || null,
@@ -34,18 +40,16 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Récupérer les missions d'un user
+// Récupérer les missions du user connecté
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const missions = await prisma.mission.findMany({
-      where: { userId },
+      where: { userId: session.user.id },
       include: { trophies: true },
       orderBy: { createdAt: "desc" },
     });

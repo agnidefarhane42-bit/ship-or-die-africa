@@ -32,12 +32,12 @@ export default function MissionPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
-    const userId = (session.user as any).id;
-    if (!userId) return;
+    
+    
 
     (async () => {
       try {
-        const res = await fetch(`/api/missions?userId=${userId}`);
+        const res = await fetch(`/api/missions`);
         const data = await res.json();
         if (data.missions?.length > 0) {
           setMission(data.missions[0]);
@@ -58,14 +58,14 @@ export default function MissionPage() {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    const userId = (session?.user as any)?.id;
-    if (!userId) return;
+    
+    
 
     try {
       const res = await fetch("/api/missions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, title, description, repoUrl, url }),
+        body: JSON.stringify({ title, description, repoUrl, url }),
       });
       const data = await res.json();
       if (!res.ok) {
