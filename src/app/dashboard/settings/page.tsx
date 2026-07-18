@@ -24,9 +24,6 @@ export default function SettingsPage() {
   }, [session]);
 
   const handleSave = async () => {
-    const userId = (session?.user as any)?.id;
-    if (!userId) return;
-
     setSaving(true);
     setError("");
     setSuccess(false);
@@ -35,7 +32,7 @@ export default function SettingsPage() {
       const res = await fetch("/api/auth/update-profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, name, bio, githubUsername: github }),
+        body: JSON.stringify({ name, bio, githubUsername: github }),
       });
 
       if (!res.ok) {
@@ -168,23 +165,10 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Notifications — bientôt disponible */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">🔔 Notifications</h2>
-        {[
-          { label: "Rappel quotidien (Telegram)", desc: "Te rappelle de committer chaque jour", on: true },
-          { label: "Alerte deadline (J-7, J-3, J-1)", desc: "Te prévient quand la deadline approche", on: true },
-          { label: "Nouvelle feuille débloquée", desc: "Notification quand tu gagnes un badge", on: true },
-          { label: "Someone shipped", desc: "Quand un bâtisseur de ta cohorte ship", on: false },
-        ].map((n, i) => (
-          <div key={i} className="flex items-center justify-between border-b border-base-content/10 pb-3 last:border-0">
-            <div>
-              <p className="font-medium text-sm">{n.label}</p>
-              <p className="text-xs text-base-content/40">{n.desc}</p>
-            </div>
-            <input type="checkbox" className="toggle toggle-warning" defaultChecked={n.on} />
-          </div>
-        ))}
+        <p className="text-sm text-base-content/40 italic">Notifications — bientôt disponible.</p>
       </div>
 
       {/* Email (lecture seule) */}

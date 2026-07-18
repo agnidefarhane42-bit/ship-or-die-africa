@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 
 export async function PATCH(req: NextRequest) {
   try {
-    const { userId, name, bio, githubUsername } = await req.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId requis" }, { status: 400 });
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    const { name, bio, githubUsername } = await req.json();
+
     const updated = await prisma.user.update({
-      where: { id: userId },
+      where: { id: session.user.id },
       data: {
         name: name || null,
         bio: bio || null,
@@ -18,11 +20,11 @@ export async function PATCH(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ 
-      id: updated.id, 
-      name: updated.name, 
+    return NextResponse.json({
+      id: updated.id,
+      name: updated.name,
       bio: updated.bio,
-      githubUsername: updated.githubUsername 
+      githubUsername: updated.githubUsername,
     });
   } catch (err) {
     console.error("Update profile error:", err);
