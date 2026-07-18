@@ -21,6 +21,9 @@ export default function MissionPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [shipping, setShipping] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
 
   // Form state
   const [title, setTitle] = useState("");
@@ -32,8 +35,6 @@ export default function MissionPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
-    
-    
 
     (async () => {
       try {
@@ -58,8 +59,6 @@ export default function MissionPage() {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    
-    
 
     try {
       const res = await fetch("/api/missions", {
@@ -78,6 +77,35 @@ export default function MissionPage() {
     } catch {
       setError("Erreur réseau");
       setSubmitting(false);
+    }
+  };
+
+  const handleShip = async () => {
+    if (!mission) return;
+    if (!confirm("🎉 Tu es sur le point de marquer ta mission comme shippée ! Es-tu sûr ?")) return;
+
+    setShipping(true);
+    setActionError("");
+    setActionSuccess("");
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId: mission.id, status: "SHIPPED" }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Erreur lors du ship");
+      } else {
+        setMission(data.mission);
+        setActionSuccess("🎉 Mission shippée ! Tu as récolté ton fruit 🌰");
+        setTimeout(() => setActionSuccess(""), 5000);
+      }
+    } catch {
+      setActionError("Erreur réseau");
+    } finally {
+      setShipping(false);
     }
   };
 
@@ -143,10 +171,18 @@ export default function MissionPage() {
   if (!mission) return null;
 
   const progress = Math.min(100, Math.round((day / 30) * 100));
+  const canShip = mission.status === "IN_PROGRESS" && !!mission.url;
 
   return (
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl sm:text-3xl font-black">🎯 Ma Mission</h1>
+
+      {actionError && (
+        <div className="alert alert-error"><span>{actionError}</span></div>
+      )}
+      {actionSuccess && (
+        <div className="alert alert-success"><span>{actionSuccess}</span></div>
+      )}
 
       {/* Countdown */}
       <div className="card-glow rounded-2xl p-6 text-center">
@@ -183,14 +219,38 @@ export default function MissionPage() {
           </div>
           <div className="flex justify-between border-b border-base-content/10 pb-2">
             <span className="text-base-content/50 text-sm">Statut</span>
-            <span className="badge badge-warning">{mission.status}</span>
+            <span className={`badge ${mission.status === "SHIPPED" ? "badge-success" : mission.status === "FAILED" ? "badge-error" : "badge-warning"}`}>{mission.status}</span>
           </div>
+          {mission.shippedAt && (
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">Shippé le</span>
+              <span className="text-success font-bold">{new Date(mission.shippedAt).toLocaleDateString("fr-FR")}</span>
+            </div>
+          )}
           <div className="flex justify-between">
             <span className="text-base-content/50 text-sm">Deadline</span>
             <span className="text-error font-bold">{new Date(mission.deadline).toLocaleDateString("fr-FR")}</span>
           </div>
         </div>
       </div>
+
+      {/* Ship button */}
+      {canShip && (
+        <div className="card-glow rounded-2xl p-6 text-center">
+          <div className="text-4xl mb-3">🌰</div>
+          <h2 className="font-bold text-lg mb-2">Prêt à récolter ton fruit ?</h2>
+          <p className="text-sm text-base-content/50 mb-4">
+            Tu as une URL en ligne. Marque ta mission comme shippée pour valider ton 30 jours.
+          </p>
+          <button
+            onClick={handleShip}
+            disabled={shipping}
+            className="btn btn-success"
+          >
+            {shipping ? "Ship en cours..." : "🌰 Marquer comme shippée"}
+          </button>
+        </div>
+      )}
 
       {/* Checklist */}
       <div className="card-glow rounded-2xl p-6">
@@ -215,7 +275,11 @@ export default function MissionPage() {
       <div className="shame-card rounded-2xl p-6">
         <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
         <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué "racines coupées".</p>
-        <button className="btn btn-error btn-sm" disabled>🚢 Marquer comme shipper (bientôt)</button>
+        {mission.status === "IN_PROGRESS" ? (
+          <p className="text-xs text-base-content/40">Tu peux abandonner depuis la page Paramètres.</p>
+        ) : (
+          <p className="text-xs text-base-content/40">Mission {mission.status === "SHIPPED" ? "shippée 🌰" : "abandonnée 🥀"}.</p>
+        )}
       </div>
     </div>
   );
