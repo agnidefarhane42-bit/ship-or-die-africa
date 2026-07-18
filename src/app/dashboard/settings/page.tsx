@@ -2,25 +2,48 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type Mission = {
+  id: string;
+  title: string;
+  status: string;
+};
 
 export default function SettingsPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [github, setGithub] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+  const [mission, setMission] = useState<Mission | null>(null);
+  const [abandoning, setAbandoning] = useState(false);
+  const [abandonMsg, setAbandonMsg] = useState("");
 
   const githubConnected = (session?.user as any)?.githubVerified === true;
   const githubUsername = (session?.user as any)?.githubUsername;
 
-  // Pré-remplir avec les données de la session
+  // Pré-remplir avec les données de la session + charger la mission
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
       setGithub((session.user as any).githubUsername || "");
     }
+
+    (async () => {
+      try {
+        const res = await fetch("/api/missions");
+        const data = await res.json();
+        if (data.missions?.length > 0) {
+          setMission(data.missions[0]);
+        }
+      } catch {
+        // silencieux
+      }
+    })();
   }, [session]);
 
   const handleSave = async () => {
@@ -49,6 +72,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleAbandon = async () => {
+    if (!mission) return;
+    if (!confirm("Es-tu sûr ? Cette action marque ta mission comme abandonnée définitivement.")) return;
+
+    setAbandoning(true);
+    setAbandonMsg("");
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId: mission.id, status: "FAILED" }),
+      });
+
+      if (res.ok) {
+        setAbandonMsg("🥀 Mission abandonnée. Tu es marqué 'racines coupées'.");
+        setTimeout(() => router.push("/dashboard"), 2000);
+      } else {
+        const data = await res.json();
+        setAbandonMsg(data.error || "Erreur lors de l'abandon");
+      }
+    } catch {
+      setAbandonMsg("Erreur réseau");
+    } finally {
+      setAbandoning(false);
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center h-64">
@@ -56,6 +107,8 @@ export default function SettingsPage() {
       </div>
     );
   }
+
+  const canAbandon = mission && mission.status === "IN_PROGRESS";
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -186,7 +239,28 @@ export default function SettingsPage() {
         <p className="text-sm text-base-content/50 mb-4">
           Si tu quittes la cohorte, tu es marqué "racines coupées" et exclu à jamais. Pas de retour.
         </p>
-        <button className="btn btn-error btn-sm">Abandonner la mission</button>
+
+        {abandonMsg && (
+          <div className="alert alert-error text-sm mb-3">
+            <span>{abandonMsg}</span>
+          </div>
+        )}
+
+        {canAbandon ? (
+          <button
+            onClick={handleAbandon}
+            disabled={abandoning}
+            className="btn btn-error btn-sm"
+          >
+            {abandoning ? "Abandon en cours..." : "Abandonner la mission"}
+          </button>
+        ) : mission ? (
+          <p className="text-xs text-base-content/40">
+            Mission {mission.status === "SHIPPED" ? "shippée 🌰" : "déjà abandonnée 🥀"}.
+          </p>
+        ) : (
+          <p className="text-xs text-base-content/40">Aucune mission active à abandonner.</p>
+        )}
       </div>
     </div>
   );
