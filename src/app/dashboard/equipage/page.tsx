@@ -1,7 +1,7 @@
 "use client";
 
 export default function EquipagePage() {
-  const crew = [
+  const builders = [
     { name: "Toi", project: "Vendia", bio: "Dev full-stack, Bénin", day: 12, commits: 23, shipped: false, isMe: true, trophies: 2, status: "active" },
     { name: "Kossi", project: "PayGate", bio: "Indie hacker, Côte d'Ivoire", day: 10, commits: 19, shipped: false, trophies: 2, status: "active" },
     { name: "Awa", project: "Marché Live", bio: "Designer/dev, Sénégal", day: 8, commits: 15, shipped: false, trophies: 1, status: "active" },
@@ -23,7 +23,7 @@ export default function EquipagePage() {
       </p>
 
       <div className="grid sm:grid-cols-2 gap-4">
-        {crew.map((m, i) => (
+        {builders.map((m, i) => (
           <div
             key={i}
             className={`rounded-2xl p-5 ${

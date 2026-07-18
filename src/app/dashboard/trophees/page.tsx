@@ -9,7 +9,7 @@ type Trophy = {
   awardedAt: string;
 };
 
-const TROPHY_META: Record<string, { icon: string; label: string; desc: string }> = {
+const LEAF_META: Record<string, { icon: string; label: string; desc: string }> = {
   FIRST_COMMIT:    { icon: "🌱", label: "Première Graine plantée", desc: "Ton premier commit sur ta mission" },
   FIRST_DEPLOY:    { icon: "🌿", label: "Première Pousse",         desc: "Ton premier déploiement en ligne" },
   FIFTY_COMMITS:   { icon: "🪵", label: "Racines qui s'enfoncent",  desc: "50 commits sur ton repo" },
@@ -18,7 +18,7 @@ const TROPHY_META: Record<string, { icon: string; label: string; desc: string }>
   EARLY_BIRD:      { icon: "🌅", label: "Premier au Cercle",        desc: "Premier de la cohorte à shipper" },
 };
 
-const ALL_TYPES = Object.keys(TROPHY_META);
+const ALL_TYPES = Object.keys(LEAF_META);
 
 export default function TropheesPage() {
   const { data: session, status } = useSession();
@@ -37,7 +37,7 @@ export default function TropheesPage() {
         const trophies: Trophy[] = data.missions?.[0]?.trophies || [];
         setUnlockedTypes(trophies.map((t) => t.type));
       } catch (err) {
-        console.error("Trophees load error:", err);
+        console.error("Feuilles load error:", err);
       } finally {
         setLoading(false);
       }
@@ -54,14 +54,14 @@ export default function TropheesPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl sm:text-3xl font-black">🌿 Trophées</h1>
+      <h1 className="text-2xl sm:text-3xl font-black">🌿 Feuilles</h1>
       <p className="text-base-content/50 text-sm">
         Débloque des feuilles en progressant sur ta mission. Elles sont visibles publiquement sur ton profil.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-4">
         {ALL_TYPES.map((type) => {
-          const meta = TROPHY_META[type];
+          const meta = LEAF_META[type];
           const unlocked = unlockedTypes.includes(type);
           return (
             <div

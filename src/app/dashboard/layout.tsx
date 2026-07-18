@@ -13,7 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <ul className="menu dropdown-content bg-base-200 rounded-box shadow-lg w-52 mt-2 z-50">
             <li><a href="/dashboard">📊 Dashboard</a></li>
             <li><a href="/dashboard/mission">🎯 Ma Mission</a></li>
-            <li><a href="/dashboard/trophees">🌿 Trophées</a></li>
+            <li><a href="/dashboard/trophees">🌿 Feuilles</a></li>
             <li><a href="/dashboard/leaderboard">📈 Leaderboard</a></li>
             <li><a href="/dashboard/equipage">🌳 Le Cercle</a></li>
             <li><a href="/dashboard/settings">⚙️ Paramètres</a></li>

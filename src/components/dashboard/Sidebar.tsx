@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/dashboard/mission", label: "Ma Mission", icon: "🎯" },
-  { href: "/dashboard/trophees", label: "Trophées", icon: "🌿" },
+  { href: "/dashboard/trophees", label: "Feuilles", icon: "🌿" },
   { href: "/dashboard/leaderboard", label: "Leaderboard", icon: "📈" },
   { href: "/dashboard/equipage", label: "Le Cercle", icon: "🌳" },
   { href: "/dashboard/settings", label: "Paramètres", icon: "⚙️" },
