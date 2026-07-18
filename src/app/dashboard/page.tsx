@@ -103,12 +103,12 @@ export default function DashboardPage() {
   });
 
   const trophyDefs = [
-    { type: "FIRST_COMMIT", icon: "🥇", label: "First Commit" },
-    { type: "FIRST_DEPLOY", icon: "🚀", label: "First Deploy" },
-    { type: "FIFTY_COMMITS", icon: "🔥", label: "50 Commits" },
-    { type: "HUNDRED_COMMITS", icon: "💯", label: "100 Commits" },
-    { type: "SHIPPED", icon: "🏴‍☠️", label: "Shipped" },
-    { type: "EARLY_BIRD", icon: "⚡", label: "Early Bird" },
+    { type: "FIRST_COMMIT", icon: "🌱", label: "Première Graine" },
+    { type: "FIRST_DEPLOY", icon: "🌿", label: "Première Pousse" },
+    { type: "FIFTY_COMMITS", icon: "🪵", label: "Racines" },
+    { type: "HUNDRED_COMMITS", icon: "🌳", label: "Feuillage" },
+    { type: "SHIPPED", icon: "🌰", label: "Fruit récolté" },
+    { type: "EARLY_BIRD", icon: "🌅", label: "Premier au Cercle" },
   ];
   const userTrophies = mission?.trophies?.map((t) => t.type) || [];
 
@@ -117,7 +117,7 @@ export default function DashboardPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black">Salut pirate 👋</h1>
+          <h1 className="text-2xl sm:text-3xl font-black">Salut bâtisseur 👋</h1>
           <p className="text-base-content/50 text-sm mt-1">
             {mission ? `Jour ${day} sur 30 · ${daysLeft} jours restants` : "Aucune mission active"}
           </p>
@@ -149,9 +149,9 @@ export default function DashboardPage() {
               <p className="text-xs text-base-content/40">commits récents</p>
             </div>
             <div className="card-glow rounded-2xl p-5">
-              <div className="text-3xl mb-2">🏆</div>
+              <div className="text-3xl mb-2">🌿</div>
               <p className="text-2xl font-black gold-text">{trophyCount}/6</p>
-              <p className="text-xs text-base-content/40">trophées</p>
+              <p className="text-xs text-base-content/40">feuilles</p>
             </div>
             <div className="card-glow rounded-2xl p-5">
               <div className="text-3xl mb-2">📊</div>
@@ -252,7 +252,7 @@ export default function DashboardPage() {
 
       {/* TROPHÉES */}
       <div className="card-glow rounded-2xl p-6">
-        <h2 className="font-bold text-lg mb-4">🏆 Trophées ({trophyCount}/6)</h2>
+        <h2 className="font-bold text-lg mb-4">🌿 Feuilles ({trophyCount}/6)</h2>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
           {trophyDefs.map((t, i) => {
             const unlocked = userTrophies.includes(t.type);
@@ -273,14 +273,14 @@ export default function DashboardPage() {
           <div className="space-y-2">
             {leaderboard.slice(0, 5).map((p, i) => (
               <div key={p.id} className={`flex items-center gap-4 p-3 rounded-xl ${p.id === (session?.user as any)?.id ? "bg-warning/10 border border-warning/30" : p.overboard ? "shame-card" : "bg-base-content/5"}`}>
-                <span className="text-lg font-black w-6">{p.overboard ? "💀" : i + 1}</span>
+                <span className="text-lg font-black w-6">{p.overboard ? "🥀" : i + 1}</span>
                 <div className="flex-1">
                   <p className={`font-bold text-sm ${p.overboard ? "text-error line-through" : ""}`}>
                     {p.name}
                     {p.id === (session?.user as any)?.id && <span className="text-warning ml-2">(toi)</span>}
                   </p>
                 </div>
-                <span className="text-xs text-base-content/40">{p.overboard ? "Overboard" : `${p.commits} commits`}</span>
+                <span className="text-xs text-base-content/40">{p.overboard ? "Flétri" : `${p.commits} commits`}</span>
                 {!p.overboard && <span className="text-xs text-base-content/40">J{p.day}</span>}
               </div>
             ))}

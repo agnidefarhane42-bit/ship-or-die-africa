@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl sm:text-3xl font-black">📈 Leaderboard</h1>
-      <p className="text-base-content/50 text-sm">Classement par nombre de commits. Le premier à shipper gagne le trophée Early Bird ⚡</p>
+      <p className="text-base-content/50 text-sm">Classement par nombre de commits. Le premier à shipper gagne la feuille "Premier au Cercle" 🌅</p>
 
       {/* Podium */}
       <div className="grid grid-cols-3 gap-4">
@@ -48,7 +48,7 @@ export default function LeaderboardPage() {
               }`}
             >
               <span className="text-lg font-black w-6 text-center">
-                {b.overboard ? "💀" : b.rank}
+                {b.overboard ? "🥀" : b.rank}
               </span>
               <div className="flex-1 min-w-0">
                 <p className={`font-bold text-sm ${b.overboard ? "text-error line-through" : ""}`}>
@@ -59,7 +59,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="hidden sm:flex gap-4 text-xs text-base-content/40">
                 <span>🔥 {b.streak}j</span>
-                <span>🏆 {b.trophies}/6</span>
+                <span>🌿 {b.trophies}/6</span>
                 <span>J{b.day}</span>
               </div>
               <span className="text-sm font-bold">{b.overboard ? "—" : `${b.commits}`}</span>
@@ -68,16 +68,16 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Hall of shame */}
+      {/* In Memoriam */}
       <div className="shame-card rounded-2xl p-6">
-        <h2 className="font-bold text-lg text-error mb-3">💀 In Memoriam</h2>
+        <h2 className="font-bold text-lg text-error mb-3">🥀 In Memoriam</h2>
         <p className="text-sm text-base-content/50">
-          Ceux qui ont raté leur deadline. On se souvient d'eux. Ils peuvent revenir dans une prochaine cohorte.
+          Ceux qui n'ont pas pu faire pousser leur projet à temps. On se souvient d'eux. Ils peuvent revenir dans une prochaine cohorte.
         </p>
         <div className="mt-4 flex items-center gap-3">
-          <span className="text-2xl">💀</span>
+          <span className="text-2xl">🥀</span>
           <span className="text-error font-bold line-through">Jean</span>
-          <span className="text-xs text-base-content/40">— Overboard le jour 30</span>
+          <span className="text-xs text-base-content/40">— Racines coupées le jour 30</span>
         </div>
       </div>
     </div>

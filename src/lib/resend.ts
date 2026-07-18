@@ -18,7 +18,6 @@ export async function sendEmail(to: string, subject: string, html: string) {
     const { data, error } = await getClient().emails.send({
       from: FROM_EMAIL,
       to,
-      subject,
       html,
     });
     if (error) throw error;
@@ -32,11 +31,11 @@ export async function sendEmail(to: string, subject: string, html: string) {
 export async function sendWelcomeEmail(to: string, name?: string) {
   return sendEmail(
     to,
-    "Bienvenue à bord, pirate ! 🏴‍☠️",
-    `<p>Salut ${name || "pirate"},</p>
+    "Bienvenue sous le baobab ! 🌳",
+    `<p>Salut ${name || "bâtisseur"},</p>
      <p>Ta place est réservée pour la première cohorte de Ship or Die Africa.</p>
-     <p>Tu recevras bientôt les détails pour rejoindre le groupe Telegram privé.</p>
-     <p>En attendant, prépare ton idée. Tu n'auras que 30 jours. ⏰</p>
-     <p>— L'équipage</p>`
+     <p>Tu recevras bientôt les détails pour rejoindre le groupe Telegram privé — le Cercle.</p>
+     <p>En attendant, prépare ton idée. Tu n'auras que 30 jours pour la faire grandir. 🌱</p>
+     <p>— La communauté du baobab</p>`
   );
 }

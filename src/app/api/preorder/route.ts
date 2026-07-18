@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ 
-        message: "Tu es déjà sur la liste, pirate ! 🏴‍☠️" 
+        message: "Tu es déjà sur la liste, bâtisseur ! 🌳" 
       }, { status: 200 });
     }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ 
-      message: "Place réservée ! On te contacte au lancement. 🏴‍☠️" 
+      message: "Place réservée ! On te contacte au lancement. 🌱" 
     }, { status: 201 });
   } catch (err) {
     console.error("Preorder error:", err);

@@ -10,12 +10,12 @@ type Trophy = {
 };
 
 const TROPHY_META: Record<string, { icon: string; label: string; desc: string }> = {
-  FIRST_COMMIT:    { icon: "🥇", label: "First Commit",    desc: "Ton premier commit sur ta mission" },
-  FIRST_DEPLOY:    { icon: "🚀", label: "First Deploy",    desc: "Ton premier déploiement en ligne" },
-  FIFTY_COMMITS:   { icon: "🔥", label: "50 Commits",      desc: "50 commits sur ton repo" },
-  HUNDRED_COMMITS: { icon: "💯", label: "100 Commits",     desc: "100 commits sur ton repo" },
-  SHIPPED:         { icon: "🏴‍☠️", label: "Shipped",        desc: "Mission complétée et lien live" },
-  EARLY_BIRD:      { icon: "⚡", label: "Early Bird",      desc: "Premier de la cohorte à shipper" },
+  FIRST_COMMIT:    { icon: "🌱", label: "Première Graine plantée", desc: "Ton premier commit sur ta mission" },
+  FIRST_DEPLOY:    { icon: "🌿", label: "Première Pousse",         desc: "Ton premier déploiement en ligne" },
+  FIFTY_COMMITS:   { icon: "🪵", label: "Racines qui s'enfoncent",  desc: "50 commits sur ton repo" },
+  HUNDRED_COMMITS: { icon: "🌳", label: "Feuillage dense",         desc: "100 commits sur ton repo" },
+  SHIPPED:         { icon: "🌰", label: "Fruit récolté",            desc: "Mission complétée et lien live" },
+  EARLY_BIRD:      { icon: "🌅", label: "Premier au Cercle",        desc: "Premier de la cohorte à shipper" },
 };
 
 const ALL_TYPES = Object.keys(TROPHY_META);
@@ -54,9 +54,9 @@ export default function TropheesPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <h1 className="text-2xl sm:text-3xl font-black">🏆 Trophées</h1>
+      <h1 className="text-2xl sm:text-3xl font-black">🌿 Trophées</h1>
       <p className="text-base-content/50 text-sm">
-        Débloque des badges en progressant sur ta mission. Ils sont visibles publiquement sur ton profil.
+        Débloque des feuilles en progressant sur ta mission. Elles sont visibles publiquement sur ton profil.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export default function TropheesPage() {
               }`}
             >
               <div className="flex items-start gap-4">
-                <div className={`text-5xl ${unlocked ? "" : "grayscale opacity-50"}`}>
+                <div className={`text-5xl ${unlocked ? "trophy-icon" : "grayscale opacity-50"}`}>
                   {meta.icon}
                 </div>
                 <div className="flex-1">

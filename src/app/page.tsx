@@ -33,7 +33,7 @@ export default function Home() {
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
         <div className="flex-1">
           <span className="text-2xl font-black tracking-tight">
-            <span className="gold-text">☠️ Ship or Die</span>
+            <span className="gold-text">🌳 Ship or Die</span>
             <span className="text-base-content/60 text-sm ml-1">Africa</span>
           </span>
         </div>
@@ -47,10 +47,10 @@ export default function Home() {
       {/* HERO */}
       <section className="px-4 sm:px-8 pt-16 pb-20 max-w-4xl mx-auto text-center section-fade">
         <div className="badge badge-error gap-2 mb-6 text-xs font-semibold uppercase tracking-wider">
-          🏴‍☠️ Première cohorte — Octobre 2026
+          🌱 Première cohorte — Octobre 2026
         </div>
         <h1 className="text-4xl sm:text-6xl font-black leading-tight mb-6">
-          Ship ton projet en <span className="gold-text">30 jours</span>
+          Grandis ton projet en <span className="gold-text">30 jours</span>
           <br />ou sors pour toujours.
         </h1>
         <p className="text-lg sm:text-xl text-base-content/60 mb-10 max-w-2xl mx-auto">
@@ -60,7 +60,7 @@ export default function Home() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a href="#pricing" className="btn btn-pirate btn-lg px-8">
-            🚀 Rejoindre la cohorte
+            🌳 Rejoindre le Cercle
           </a>
           <a href="#how" className="btn btn-ghost btn-lg text-base-content/60">
             Comment ça marche →
@@ -75,7 +75,7 @@ export default function Home() {
       <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-black mb-4">"Je suis à deux semaines du lancement."</h2>
-          <p className="text-xl text-base-content/50">Ça fait 4 mois que tu dis ça. 💀</p>
+          <p className="text-xl text-base-content/50">Ça fait 4 mois que tu dis ça. 🌵</p>
         </div>
         <div className="grid sm:grid-cols-3 gap-6">
           <div className="card-glow rounded-2xl p-6">
@@ -99,23 +99,23 @@ export default function Home() {
       {/* HOW IT WORKS */}
       <section id="how" className="px-4 sm:px-8 py-20 max-w-5xl mx-auto">
         <h2 className="text-3xl sm:text-4xl font-black text-center mb-16">
-          Ship un projet tous les <span className="gold-text">30 jours</span>
+          Grandis un projet tous les <span className="gold-text">30 jours</span>
         </h2>
         <div className="grid sm:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-error/10 border border-error/30 flex items-center justify-center text-3xl mb-4">🏴‍☠️</div>
-            <h3 className="font-bold text-xl mb-3">01 · Rejoins l'équipage</h3>
-            <p className="text-base-content/50 text-sm">Un groupe de builders africains qui shippent. Check-in quotidien : "j'ai bossé sur X aujourd'hui". GitHub optionnel — ce qui compte c'est la progression, pas l'outil.</p>
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-error/10 border border-error/30 flex items-center justify-center text-3xl mb-4">🌳</div>
+            <h3 className="font-bold text-xl mb-3">01 · Rejoins le Cercle</h3>
+            <p className="text-base-content/50 text-sm">Un groupe de bâtisseurs africains qui livrent. Check-in quotidien : "j'ai bossé sur X aujourd'hui". GitHub optionnel — ce qui compte c'est la progression, pas l'outil.</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-3xl mb-4">🎯</div>
-            <h3 className="font-bold text-xl mb-3">02 · Un petit paris</h3>
+            <h3 className="font-bold text-xl mb-3">02 · Un petit pari</h3>
             <p className="text-base-content/50 text-sm">Une feature qui marche. Un lien que quelqu'un peut ouvrir. C'est tout ce qu'il faut pour valider. On te guide étape par étape.</p>
           </div>
           <div className="text-center">
-            <div className="w-20 h-20 mx-auto rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center text-3xl mb-4">🔥</div>
-            <h3 className="font-bold text-xl mb-3">03 · Tiens le cap</h3>
-            <p className="text-base-content/50 text-sm">Profil public. Deadline de 30 jours (avec 3 jours de pause pour les imprévus). Trophées quand tu ships. L'équipage te pousse quand tu faiblis.</p>
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center text-3xl mb-4">🌱</div>
+            <h3 className="font-bold text-xl mb-3">03 · Fais pousser</h3>
+            <p className="text-base-content/50 text-sm">Profil public. Deadline de 30 jours (avec 3 jours de pause pour les imprévus). Feuilles quand tu ships. Le Cercle te pousse quand tu faiblis.</p>
           </div>
         </div>
       </section>
@@ -124,12 +124,12 @@ export default function Home() {
       <section className="px-4 sm:px-8 py-16 max-w-3xl mx-auto">
         <div className="card-glow rounded-3xl p-8 sm:p-12 text-center border border-warning/20">
           <div className="text-5xl mb-6">⚠️</div>
-          <h2 className="text-2xl sm:text-3xl font-black mb-4">Deadline manquée = Overboard</h2>
+          <h2 className="text-2xl sm:text-3xl font-black mb-4">Deadline manquée = Racines coupées</h2>
           <p className="text-base-content/60 mb-6 max-w-md mx-auto">
             On est compréhensifs — coupure de courant, internet instable, boulot à côté. C'est pour ça que tu as <b className="text-warning">3 jours de pause</b> à utiliser quand tu veux.
           </p>
           <ul className="text-left max-w-md mx-auto space-y-3 text-base-content/60">
-            <li className="flex gap-3"><span className="text-warning">⚠️</span> Profil marqué "overboard" (en mémoire, pas en honte)</li>
+            <li className="flex gap-3"><span className="text-warning">⚠️</span> Profil marqué "racines coupées" (en mémoire, pas en honte)</li>
             <li className="flex gap-3"><span className="text-warning">⚠️</span> Accès suspendu à la communauté</li>
             <li className="flex gap-3"><span className="text-warning">⚠️</span> Pas de remboursement</li>
             <li className="flex gap-3"><span className="text-success">✓</span> Tu peux revenir dans une prochaine cohorte (en repayant)</li>
@@ -144,10 +144,10 @@ export default function Home() {
           {[
             { icon: "💬", text: "Groupe Telegram privé de la cohorte" },
             { icon: "📊", text: "Profil public avec tous tes projets" },
-            { icon: "🏆", text: "Trophées automatiques (first commit, first deploy...)" },
+            { icon: "🌿", text: "Feuilles automatiques (première graine, premier déploiement...)" },
             { icon: "🔗", text: "Connexion GitHub (optionnel) pour tracker tes commits" },
             { icon: "⏰", text: "Deadline de 30 jours + 3 jours de pause" },
-            { icon: "🤝", text: "Accountability quotidienne avec d'autres builders" },
+            { icon: "🤝", text: "Accountability quotidienne avec d'autres bâtisseurs" },
           ].map((item, i) => (
             <div key={i} className="card-glow rounded-xl p-5 flex items-center gap-4">
               <span className="text-3xl">{item.icon}</span>
@@ -169,7 +169,7 @@ export default function Home() {
               <li>• Tu codes seul et personne ne te push</li>
               <li>• Tu as besoin d'un deadline pour avancer</li>
               <li>• App, site, bot, API, outil — tous les projets sont bienvenus</li>
-              <li>• Tu veux faire partie d'une communauté de builders africains</li>
+              <li>• Tu veux faire partie d'une communauté de bâtisseurs africains</li>
             </ul>
           </div>
           <div className="card-glow rounded-2xl p-6">
@@ -198,7 +198,7 @@ export default function Home() {
             <p className="flex gap-3"><span className="text-success">✓</span> Mission gamifiée de 30 jours + 3 jours de pause</p>
             <p className="flex gap-3"><span className="text-success">✓</span> Profil public avec tes projets</p>
             <p className="flex gap-3"><span className="text-success">✓</span> Tracker GitHub (optionnel) ou check-in manuel</p>
-            <p className="flex gap-3"><span className="text-success">✓</span> Trophées et badges</p>
+            <p className="flex gap-3"><span className="text-success">✓</span> Feuilles et badges</p>
             <p className="flex gap-3"><span className="text-success">✓</span> Paiement Mobile Money (MoMo, Orange Money, Wave) ou carte</p>
           </div>
 
@@ -213,7 +213,7 @@ export default function Home() {
                 className="input input-bordered w-full bg-base-200 mb-4"
               />
               <button type="submit" disabled={loading} className="btn btn-pirate w-full btn-lg">
-                {loading ? "..." : "🏴‍☠️ Réserver ma place"}
+                {loading ? "..." : "🌳 Réserver ma place"}
               </button>
               <p className="text-xs text-base-content/40 mt-4">Tu paies uniquement quand la cohorte démarre. Pas avant.</p>
             </form>
@@ -249,7 +249,7 @@ export default function Home() {
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-3xl font-black gold-text">30</div>
-            <div className="text-sm text-base-content/40">jours pour shipper</div>
+            <div className="text-sm text-base-content/40">jours pour grandir</div>
           </div>
           <div>
             <div className="text-3xl font-black gold-text">∞</div>
@@ -266,7 +266,7 @@ export default function Home() {
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-20">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
-            <span className="font-black gold-text">☠️ Ship or Die Africa</span>
+            <span className="font-black gold-text">🌳 Ship or Die Africa</span>
             <p className="text-sm text-base-content/40 mt-1">Built by builders, for builders.</p>
           </div>
           <div className="flex gap-6 text-sm text-base-content/40">

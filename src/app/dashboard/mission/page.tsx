@@ -99,10 +99,10 @@ export default function MissionPage() {
       <div className="space-y-6 max-w-3xl">
         <h1 className="text-2xl sm:text-3xl font-black">🎯 Ma Mission</h1>
         <div className="card-glow rounded-2xl p-8 text-center">
-          <div className="text-5xl mb-4">🏴‍☠️</div>
+          <div className="text-5xl mb-4">🌳</div>
           <h2 className="text-xl font-bold mb-2">Prêt à shipper ?</h2>
           <p className="text-base-content/50 text-sm mb-6">Crée ta mission. Tu as 30 jours (+ 3 jours de pause) pour shipper ton projet.</p>
-          <button onClick={() => setCreating(true)} className="btn btn-pirate">🎯 Créer ma mission</button>
+          <button onClick={() => setCreating(true)} className="btn btn-pirate">🌱 Créer ma mission</button>
         </div>
       </div>
     );
@@ -132,7 +132,7 @@ export default function MissionPage() {
             <input type="url" placeholder="https://ton-projet.vercel.app" value={url} onChange={(e) => setUrl(e.target.value)} className="input input-bordered w-full bg-base-200" />
           </div>
           <div className="flex gap-3">
-            <button type="submit" disabled={submitting} className="btn btn-pirate flex-1">{submitting ? "Création..." : "🚀 Lancer ma mission"}</button>
+            <button type="submit" disabled={submitting} className="btn btn-pirate flex-1">{submitting ? "Création..." : "🌱 Lancer ma mission"}</button>
             <button type="button" onClick={() => setCreating(false)} className="btn btn-ghost">Annuler</button>
           </div>
         </form>
@@ -214,7 +214,7 @@ export default function MissionPage() {
       {/* DANGER ZONE */}
       <div className="shame-card rounded-2xl p-6">
         <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
-        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué overboard.</p>
+        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué "racines coupées".</p>
         <button className="btn btn-error btn-sm" disabled>🚢 Marquer comme shipper (bientôt)</button>
       </div>
     </div>

@@ -34,7 +34,7 @@ export default function LoginPage() {
     <main className="hero-bg min-h-screen flex items-center justify-center px-4">
       <div className="card-glow rounded-3xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black gold-text mb-2">☠️ Ship or Die Africa</h1>
+          <h1 className="text-2xl font-black gold-text mb-2">🌳 Ship or Die Africa</h1>
           <p className="text-base-content/50 text-sm">Connexion à ta mission</p>
         </div>
         {error && (
@@ -71,7 +71,7 @@ export default function LoginPage() {
         </form>
         <div className="divider text-base-content/30 text-xs">OU</div>
         <p className="text-center text-sm text-base-content/50">
-          Pas encore pirate ? <a href="/register" className="text-warning font-semibold">Crée un compte</a>
+          Pas encore bâtisseur ? <a href="/register" className="text-warning font-semibold">Crée un compte</a>
         </p>
       </div>
     </main>

@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/dashboard/mission", label: "Ma Mission", icon: "🎯" },
-  { href: "/dashboard/trophees", label: "Trophées", icon: "🏆" },
+  { href: "/dashboard/trophees", label: "Trophées", icon: "🌿" },
   { href: "/dashboard/leaderboard", label: "Leaderboard", icon: "📈" },
-  { href: "/dashboard/equipage", label: "Équipage", icon: "🏴‍☠️" },
+  { href: "/dashboard/equipage", label: "Le Cercle", icon: "🌳" },
   { href: "/dashboard/settings", label: "Paramètres", icon: "⚙️" },
 ];
 
@@ -17,7 +17,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden sm:flex flex-col w-64 min-h-screen border-r border-base-content/10 bg-base-200/50 backdrop-blur-xl fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-base-content/10">
-        <Link href="/" className="text-xl font-black gold-text">☠️ Ship or Die</Link>
+        <Link href="/" className="text-xl font-black gold-text">🌳 Ship or Die</Link>
         <p className="text-xs text-base-content/40 mt-1">Africa</p>
       </div>
       

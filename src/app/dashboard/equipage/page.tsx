@@ -14,12 +14,12 @@ export default function EquipagePage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl sm:text-3xl font-black">🏴‍☠️ L'Équipage</h1>
-        <span className="badge badge-warning gap-2">6 pirates · 1 overboard</span>
+        <h1 className="text-2xl sm:text-3xl font-black">🌳 Le Cercle</h1>
+        <span className="badge badge-warning gap-2">6 bâtisseurs · 1 flétri</span>
       </div>
 
       <p className="text-base-content/50 text-sm">
-        Ta cohorte. Vous êtes dans le même bateau. Check-ins quotidiens, entraide, et accountability.
+        Ta cohorte. Vous êtes sous le même baobab. Check-ins quotidiens, entraide, et accountability.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-4">
@@ -42,7 +42,7 @@ export default function EquipagePage() {
                     {m.name}
                     {m.isMe && <span className="text-warning text-xs ml-1">(toi)</span>}
                   </h3>
-                  {m.status === "overboard" && <span className="text-xl">💀</span>}
+                  {m.status === "overboard" && <span className="text-xl">🥀</span>}
                 </div>
                 <p className="text-xs text-base-content/40 mb-2">{m.bio}</p>
                 <div className="flex gap-2 flex-wrap">
@@ -51,7 +51,7 @@ export default function EquipagePage() {
                     <>
                       <span className="badge badge-sm">J{m.day}</span>
                       <span className="badge badge-sm badge-success">🔥 {m.commits} commits</span>
-                      <span className="badge badge-sm badge-warning">🏆 {m.trophies}</span>
+                      <span className="badge badge-sm badge-warning">🌿 {m.trophies}</span>
                     </>
                   )}
                 </div>

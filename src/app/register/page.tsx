@@ -41,8 +41,8 @@ export default function RegisterPage() {
     <main className="hero-bg min-h-screen flex items-center justify-center px-4">
       <div className="card-glow rounded-3xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black gold-text mb-2">☠️ Ship or Die Africa</h1>
-          <p className="text-base-content/50 text-sm">Rejoins l'équipage</p>
+          <h1 className="text-2xl font-black gold-text mb-2">🌳 Ship or Die Africa</h1>
+          <p className="text-base-content/50 text-sm">Rejoins le Cercle</p>
         </div>
         {error && (
           <div className="alert alert-error mb-4">
@@ -95,12 +95,12 @@ export default function RegisterPage() {
             />
           </div>
           <button type="submit" disabled={loading} className="btn btn-pirate w-full">
-            {loading ? "Inscription..." : "🏴‍☠️ Rejoindre l'équipage"}
+            {loading ? "Inscription..." : "🌳 Rejoindre le Cercle"}
           </button>
         </form>
         <div className="divider text-base-content/30 text-xs">OU</div>
         <p className="text-center text-sm text-base-content/50">
-          Déjà pirate ? <a href="/login" className="text-warning font-semibold">Se connecter</a>
+          Déjà bâtisseur ? <a href="/login" className="text-warning font-semibold">Se connecter</a>
         </p>
       </div>
     </main>

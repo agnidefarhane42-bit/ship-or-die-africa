@@ -87,6 +87,10 @@ model Trophy {
   awardedAt   DateTime @default(now())
 }
 
+// TrophyType — Les valeurs restent identiques en base (ne pas renommer).
+// Affichage Baobab : FIRST_COMMIT -> Premiere Graine plantee, FIRST_DEPLOY -> Premiere Pousse,
+// FIFTY_COMMITS -> Racines qui s'enfoncent, HUNDRED_COMMITS -> Feuillage dense,
+// SHIPPED -> Fruit recolte, EARLY_BIRD -> Premier au Cercle
 enum TrophyType {
   FIRST_COMMIT
   FIRST_DEPLOY
