@@ -22,13 +22,18 @@ export async function GET() {
         );
         const isOverboard = day > 30 && mission.status !== "SHIPPED";
         const trophies = mission.trophies?.length || 0;
+
+        // Ne calculer les commits/streak que pour les utilisateurs vérifiés GitHub
+        const commits = u.githubVerified ? mission.commitCount : 0;
+        const streak = u.githubVerified ? mission.currentStreak : 0;
+
         return {
           id: u.id,
           name: u.name || "Anonyme",
           project: mission.title,
-          commits: mission.commitCount,
+          commits,
           day: Math.min(day, 30),
-          streak: mission.currentStreak,
+          streak,
           shipped: mission.status === "SHIPPED",
           overboard: isOverboard,
           trophies,

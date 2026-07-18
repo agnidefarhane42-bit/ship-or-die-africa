@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 export default function SettingsPage() {
@@ -11,6 +11,9 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  const githubConnected = (session?.user as any)?.githubVerified === true;
+  const githubUsername = (session?.user as any)?.githubUsername;
 
   // Pré-remplir avec les données de la session
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function SettingsPage() {
             rows={2}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
-            placeholder="Dev full-stack, Bénin. Je shippe ou je meurs."
+            placeholder="Dev full-stack, Bénin. Je grandis ou je tombe."
           />
         </div>
 
@@ -114,11 +117,40 @@ export default function SettingsPage() {
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">🔗 Connexion GitHub</h2>
         <p className="text-sm text-base-content/50">
-          Connecte ton GitHub pour tracker automatiquement tes commits sur ta mission.
+          Connecte ton GitHub pour tracker automatiquement tes commits sur le leaderboard.
+          Sans cette connexion, ton compte n'apparaîtra pas dans le tracking automatique.
         </p>
-        <div>
+
+        {githubConnected ? (
+          <div className="flex items-center justify-between p-4 bg-base-content/5 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-base-content/10 flex items-center justify-center text-xl">🐙</div>
+              <div>
+                <p className="font-bold text-sm">{githubUsername || "GitHub"}</p>
+                <p className="text-xs text-success">✅ Vérifié</p>
+              </div>
+            </div>
+            <button className="btn btn-ghost btn-sm" disabled>Connecté</button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-12 h-12 rounded-full bg-base-content/5 flex items-center justify-center text-2xl opacity-50">🔒</div>
+            <p className="text-xs text-base-content/40 text-center max-w-xs">
+              Ton compte n'apparaîtra pas dans le tracking automatique tant que GitHub n'est pas connecté.
+            </p>
+            <button
+              onClick={() => signIn("github")}
+              className="btn btn-pirate"
+            >
+              🔗 Connecter mon GitHub
+            </button>
+          </div>
+        )}
+
+        {/* Saisie manuelle du username (fallback si pas d'OAuth) */}
+        <div className="border-t border-base-content/10 pt-4 mt-2">
           <label className="label">
-            <span className="label-text text-base-content/60">Username GitHub</span>
+            <span className="label-text text-base-content/60">Username GitHub (manuel)</span>
           </label>
           <input
             className="input input-bordered w-full bg-base-200"
@@ -126,14 +158,33 @@ export default function SettingsPage() {
             onChange={(e) => setGithub(e.target.value)}
             placeholder="username (sans @)"
           />
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="btn btn-ghost btn-sm mt-2"
+          >
+            {saving ? "Sauvegarde..." : "💾 Sauvegarder GitHub"}
+          </button>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="btn btn-ghost btn-sm"
-        >
-          {saving ? "Sauvegarde..." : "💾 Sauvegarder GitHub"}
-        </button>
+      </div>
+
+      {/* Notifications */}
+      <div className="card-glow rounded-2xl p-6 space-y-4">
+        <h2 className="font-bold text-lg">🔔 Notifications</h2>
+        {[
+          { label: "Rappel quotidien (Telegram)", desc: "Te rappelle de committer chaque jour", on: true },
+          { label: "Alerte deadline (J-7, J-3, J-1)", desc: "Te prévient quand la deadline approche", on: true },
+          { label: "Nouvelle feuille débloquée", desc: "Notification quand tu gagnes un badge", on: true },
+          { label: "Someone shipped", desc: "Quand un bâtisseur de ta cohorte ship", on: false },
+        ].map((n, i) => (
+          <div key={i} className="flex items-center justify-between border-b border-base-content/10 pb-3 last:border-0">
+            <div>
+              <p className="font-medium text-sm">{n.label}</p>
+              <p className="text-xs text-base-content/40">{n.desc}</p>
+            </div>
+            <input type="checkbox" className="toggle toggle-warning" defaultChecked={n.on} />
+          </div>
+        ))}
       </div>
 
       {/* Email (lecture seule) */}
@@ -143,6 +194,15 @@ export default function SettingsPage() {
           {session?.user?.email || "—"}
         </p>
         <p className="text-xs text-base-content/40">L'email ne peut pas être modifié.</p>
+      </div>
+
+      {/* DANGER */}
+      <div className="shame-card rounded-2xl p-6">
+        <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
+        <p className="text-sm text-base-content/50 mb-4">
+          Si tu quittes la cohorte, tu es marqué "racines coupées" et exclu à jamais. Pas de retour.
+        </p>
+        <button className="btn btn-error btn-sm">Abandonner la mission</button>
       </div>
     </div>
   );

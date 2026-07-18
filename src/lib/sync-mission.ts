@@ -122,7 +122,7 @@ export async function syncMission(missionId: string): Promise<void> {
     include: { user: true },
   });
 
-  if (!mission || !mission.repoUrl || !mission.user?.githubUsername) return;
+  if (!mission || !mission.repoUrl || !mission.user?.githubUsername || !mission.user?.githubVerified) return;
   if (mission.status !== "IN_PROGRESS") return;
 
   const repoInfo = parseRepoUrl(mission.repoUrl);
