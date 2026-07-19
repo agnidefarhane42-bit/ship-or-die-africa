@@ -8,6 +8,7 @@ type Mission = {
   id: string;
   title: string;
   status: string;
+  isPublic: boolean;
 };
 
 export default function SettingsPage() {
@@ -34,6 +35,8 @@ export default function SettingsPage() {
   const [notifyTrophyUnlocked, setNotifyTrophyUnlocked] = useState(true);
   const [notifySomeoneShipped, setNotifySomeoneShipped] = useState(false);
   const [notifySaving, setNotifySaving] = useState(false);
+  const [isPublicSaving, setIsPublicSaving] = useState(false);
+  const [isPublicSuccess, setIsPublicSuccess] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
 
   const githubConnected = (session?.user as any)?.githubVerified === true;
@@ -179,6 +182,29 @@ export default function SettingsPage() {
       setAbandonMsg("Erreur réseau");
     } finally {
       setAbandoning(false);
+    }
+  };
+
+  const handleTogglePublic = async (value: boolean) => {
+    if (!mission) return;
+    setIsPublicSaving(true);
+    setIsPublicSuccess(false);
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId: mission.id, isPublic: value }),
+      });
+      if (res.ok) {
+        setMission((m) => m ? { ...m, isPublic: value } : m);
+        setIsPublicSuccess(true);
+        setTimeout(() => setIsPublicSuccess(false), 3000);
+      }
+    } catch {
+      // silencieux
+    } finally {
+      setIsPublicSaving(false);
     }
   };
 
@@ -386,6 +412,36 @@ export default function SettingsPage() {
           {notifySaving ? "Sauvegarde..." : "💾 Sauvegarder les préférences"}
         </button>
       </div>
+
+      {/* La Récolte — visibilité */}
+      {mission && mission.status === "SHIPPED" && (
+        <div className="card-glow rounded-2xl p-6 space-y-4">
+          <h2 className="font-bold text-lg">🌰 La Récolte</h2>
+          <p className="text-sm text-base-content/50">
+            Contrôle si ton projet shippé apparaît sur la page publique La Récolte.
+          </p>
+
+          {isPublicSuccess && (
+            <div className="alert alert-success text-sm">
+              <span>✅ Visibilité mise à jour !</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between gap-4 p-3 bg-base-content/5 rounded-xl">
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm">Afficher sur La Récolte</p>
+              <p className="text-xs text-base-content/40">Ton projet sera visible publiquement sur /recolte</p>
+            </div>
+            <input
+              type="checkbox"
+              className="toggle toggle-warning"
+              checked={mission.isPublic ?? true}
+              onChange={(e) => handleTogglePublic(e.target.checked)}
+              disabled={isPublicSaving}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Email (lecture seule) */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
