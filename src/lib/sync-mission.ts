@@ -20,7 +20,7 @@
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
-import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
+import { sendTelegramMessage, sendGroupMessage, escapeHtml } from "@/lib/telegram";
 
 /** Timezone produit par défaut (WAT). */
 const DEFAULT_TZ = "Africa/Lagos";
@@ -303,5 +303,28 @@ export async function syncMission(missionId: string): Promise<void> {
       where: { id: missionId },
       data: { status: "FAILED" },
     });
+
+    // ── Annonce douce dans le groupe Telegram ──
+    // Respecte user.notifyGroupOnShipFail (opt-out).
+    // Ton bienveillant, jamais humiliant — on encourage, pas de honte publique.
+    // Non-bloquant : si Telegram est indisponible, le FAIL réussit quand même.
+    if (mission.user?.notifyGroupOnShipFail) {
+      try {
+        const baseUrl = process.env.NEXTAUTH_URL || "";
+        const builderName = escapeHtml(mission.user?.name || "Un bâtisseur");
+        const safeTitle = escapeHtml(mission.title);
+        const builderLink = `${baseUrl}/builders/${mission.user.id}`;
+
+        const groupMsg =
+          `🍂 <b>${builderName}</b> n'a pas eu le temps de finir <b>${safeTitle}</b> dans les 30 jours.\n\n` +
+          `Ça arrive à tout le monde sous le baobab — on est là pour la prochaine tentative 💪\n` +
+          `${builderLink}`;
+
+        await sendGroupMessage(groupMsg);
+      } catch (groupErr) {
+        console.error("Group announcement (fail) error:", groupErr);
+        // ne bloque pas le FAIL
+      }
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
+import { sendTelegramMessage, sendGroupMessage, escapeHtml } from "@/lib/telegram";
 
 /** Libellés Baobab pour les trophées attribués au ship */
 const TROPHY_LABELS: Record<string, string> = {
@@ -288,6 +288,33 @@ export async function PATCH(req: NextRequest) {
         } catch (notifyErr) {
           console.error("notifySomeoneShipped error:", notifyErr);
           // ne bloque pas le ship
+        }
+
+        // ── Annonce dans le groupe Telegram ──
+        // Poste un message festif dans le groupe communautaire.
+        // Respecte user.notifyGroupOnShipFail (opt-out).
+        // Non-bloquant : si Telegram est indisponible, le ship réussit quand même.
+        if (mission.user?.notifyGroupOnShipFail) {
+          try {
+            const baseUrl = process.env.NEXTAUTH_URL || "";
+            const shipperName = escapeHtml(mission.user?.name || "Un bâtisseur");
+            const safeTitle = escapeHtml(mission.title);
+            const safeTagline = tagline ? escapeHtml(tagline.trim()) : "";
+            const builderLink = `${baseUrl}/builders/${session.user.id}`;
+            const recolteLink = `${baseUrl}/recolte/${missionId}`;
+
+            const groupMsg =
+              `🌰 <b>${shipperName}</b> a shippé <b>${safeTitle}</b> !\n\n` +
+              (safeTagline ? `<i>${safeTagline}</i>\n\n` : "") +
+              `👉 Voir le profil : ${builderLink}\n` +
+              `👉 Voir la fiche : ${recolteLink}\n\n` +
+              `Un fruit de plus sous le baobab. 🌳`;
+
+            await sendGroupMessage(groupMsg);
+          } catch (groupErr) {
+            console.error("Group announcement (ship) error:", groupErr);
+            // ne bloque pas le ship
+          }
         }
       }
 

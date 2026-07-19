@@ -29,6 +29,7 @@ export async function GET() {
         notifyDeadlineAlert: true,
         notifyTrophyUnlocked: true,
         notifySomeoneShipped: true,
+        notifyGroupOnShipFail: true,
       },
     });
 
@@ -58,6 +59,7 @@ export async function PATCH(req: NextRequest) {
     const notifyDeadlineAlert = typeof body.notifyDeadlineAlert === "boolean" ? body.notifyDeadlineAlert : undefined;
     const notifyTrophyUnlocked = typeof body.notifyTrophyUnlocked === "boolean" ? body.notifyTrophyUnlocked : undefined;
     const notifySomeoneShipped = typeof body.notifySomeoneShipped === "boolean" ? body.notifySomeoneShipped : undefined;
+    const notifyGroupOnShipFail = typeof body.notifyGroupOnShipFail === "boolean" ? body.notifyGroupOnShipFail : undefined;
 
     // Construire l'objet data — ne mettre à jour que les champs fournis
     const data: any = {};
@@ -68,6 +70,7 @@ export async function PATCH(req: NextRequest) {
     if (notifyDeadlineAlert !== undefined) data.notifyDeadlineAlert = notifyDeadlineAlert;
     if (notifyTrophyUnlocked !== undefined) data.notifyTrophyUnlocked = notifyTrophyUnlocked;
     if (notifySomeoneShipped !== undefined) data.notifySomeoneShipped = notifySomeoneShipped;
+    if (notifyGroupOnShipFail !== undefined) data.notifyGroupOnShipFail = notifyGroupOnShipFail;
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
@@ -85,6 +88,7 @@ export async function PATCH(req: NextRequest) {
       notifyDeadlineAlert: updated.notifyDeadlineAlert,
       notifyTrophyUnlocked: updated.notifyTrophyUnlocked,
       notifySomeoneShipped: updated.notifySomeoneShipped,
+      notifyGroupOnShipFail: updated.notifyGroupOnShipFail,
       telegramChatId: updated.telegramChatId,
     });
   } catch (err) {

@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [notifyDeadlineAlert, setNotifyDeadlineAlert] = useState(true);
   const [notifyTrophyUnlocked, setNotifyTrophyUnlocked] = useState(true);
   const [notifySomeoneShipped, setNotifySomeoneShipped] = useState(false);
+  const [notifyGroupOnShipFail, setNotifyGroupOnShipFail] = useState(true);
   const [notifySaving, setNotifySaving] = useState(false);
   const [isPublicSaving, setIsPublicSaving] = useState(false);
   const [isPublicSuccess, setIsPublicSuccess] = useState(false);
@@ -90,6 +91,7 @@ export default function SettingsPage() {
           if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
           if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
           if (profileData.notifySomeoneShipped !== undefined) setNotifySomeoneShipped(profileData.notifySomeoneShipped);
+          if (profileData.notifyGroupOnShipFail !== undefined) setNotifyGroupOnShipFail(profileData.notifyGroupOnShipFail);
           setTelegramConnected(!!profileData.telegramChatId);
         }
       } catch {
@@ -137,6 +139,7 @@ export default function SettingsPage() {
           notifyDeadlineAlert,
           notifyTrophyUnlocked,
           notifySomeoneShipped,
+          notifyGroupOnShipFail,
         }),
       });
 
@@ -249,6 +252,7 @@ export default function SettingsPage() {
     { key: "notifyDeadlineAlert", label: "⏰ Alertes de deadline", desc: "Notification à J-7, J-3 et J-1 avant la deadline", value: notifyDeadlineAlert, setter: setNotifyDeadlineAlert },
     { key: "notifyTrophyUnlocked", label: "🌿 Feuilles débloquées", desc: "Notification quand tu gagnes une nouvelle feuille", value: notifyTrophyUnlocked, setter: setNotifyTrophyUnlocked },
     { key: "notifySomeoneShipped", label: "🌰 Quelqu'un a shippé", desc: "Notification quand un autre bâtisseur termine sa mission", value: notifySomeoneShipped, setter: setNotifySomeoneShipped },
+    { key: "notifyGroupOnShipFail", label: "📢 Annoncer dans le groupe", desc: "Annoncer mes ships/échecs dans le groupe Telegram de la communauté", value: notifyGroupOnShipFail, setter: setNotifyGroupOnShipFail },
   ];
 
   return (

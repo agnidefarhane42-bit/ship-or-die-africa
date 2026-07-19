@@ -34,7 +34,8 @@ model User {
   notifyDailyReminder   Boolean @default(true)
   notifyDeadlineAlert   Boolean @default(true)
   notifyTrophyUnlocked  Boolean @default(true)
-  notifySomeoneShipped  Boolean @default(false)
+  notifySomeoneShipped    Boolean @default(false)
+  notifyGroupOnShipFail   Boolean @default(true)
 
   // ---- Cohorte ----
   cohortId      String?   @db.ObjectId
