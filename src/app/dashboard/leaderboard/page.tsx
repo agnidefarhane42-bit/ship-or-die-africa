@@ -21,7 +21,7 @@ type Builder = {
 };
 
 export default function LeaderboardPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [builders, setBuilders] = useState<Builder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,7 +63,7 @@ export default function LeaderboardPage() {
     );
   }
 
-  const currentUserId = (session?.user as any)?.id;
+  const currentUserId = session?.user?.id;
   const activeBuilders = builders.filter((b) => !b.overboard);
   const overboardBuilders = builders.filter((b) => b.overboard);
   const podium = activeBuilders.slice(0, 3);
