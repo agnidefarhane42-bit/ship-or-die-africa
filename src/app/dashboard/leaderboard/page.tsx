@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type Builder = {
   id: string;
@@ -15,6 +16,8 @@ type Builder = {
   trophies: number;
   githubUsername?: string;
   githubVerified?: boolean;
+  avatarUrl?: string | null;
+  image?: string | null;
 };
 
 export default function LeaderboardPage() {
@@ -88,9 +91,20 @@ export default function LeaderboardPage() {
                 const b = podium[idx];
                 if (!b) return null;
                 const visualIdx = idx === 1 ? 0 : idx === 0 ? 1 : 2;
+                const avatarSrc = getAvatarUrl(b);
                 return (
                   <div key={b.id} className="flex flex-col items-center justify-end">
                     <div className="text-3xl mb-2">{medals[visualIdx]}</div>
+                    {avatarSrc ? (
+                      <div className="w-10 h-10 rounded-full overflow-hidden mb-1">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={avatarSrc} alt={b.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-base-content/20 flex items-center justify-center mb-1 text-sm font-bold">
+                        {b.name?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
                     <div className={`text-sm font-bold ${b.id === currentUserId ? "text-warning" : ""}`}>{b.name}</div>
                     <div className="text-xs text-base-content/40 mb-2">{b.commits} commits</div>
                     <div className={`w-full ${heights[visualIdx]} rounded-t-xl ${
@@ -109,36 +123,49 @@ export default function LeaderboardPage() {
           {/* Full ranking */}
           <div className="card-glow rounded-2xl p-4 sm:p-6">
             <div className="space-y-2">
-              {builders.map((b, i) => (
-                <div
-                  key={b.id || i}
-                  className={`flex items-center gap-3 sm:gap-4 p-3 rounded-xl ${
-                    b.id === currentUserId
-                      ? "bg-warning/10 border border-warning/30"
-                      : b.overboard
-                      ? "shame-card"
-                      : "bg-base-content/5"
-                  }`}
-                >
-                  <span className="text-lg font-black w-6 text-center">
-                    {b.overboard ? "🥀" : i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-bold text-sm ${b.overboard ? "text-error line-through" : ""}`}>
-                      {b.name}
-                      {b.id === currentUserId && <span className="text-warning ml-2">(toi)</span>}
-                      {b.shipped && <span className="text-success ml-2">🌰</span>}
-                    </p>
-                    <p className="text-xs text-base-content/40 truncate">{b.project}</p>
+              {builders.map((b, i) => {
+                const avatarSrc = getAvatarUrl(b);
+                return (
+                  <div
+                    key={b.id || i}
+                    className={`flex items-center gap-3 sm:gap-4 p-3 rounded-xl ${
+                      b.id === currentUserId
+                        ? "bg-warning/10 border border-warning/30"
+                        : b.overboard
+                        ? "shame-card"
+                        : "bg-base-content/5"
+                    }`}
+                  >
+                    <span className="text-lg font-black w-6 text-center">
+                      {b.overboard ? "🥀" : i + 1}
+                    </span>
+                    {avatarSrc ? (
+                      <div className="w-8 h-8 rounded-full overflow-hidden flex-none">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={avatarSrc} alt={b.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-base-content/20 flex items-center justify-center flex-none text-xs font-bold">
+                        {b.name?.[0]?.toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-bold text-sm ${b.overboard ? "text-error line-through" : ""}`}>
+                        {b.name}
+                        {b.id === currentUserId && <span className="text-warning ml-2">(toi)</span>}
+                        {b.shipped && <span className="text-success ml-2">🌰</span>}
+                      </p>
+                      <p className="text-xs text-base-content/40 truncate">{b.project}</p>
+                    </div>
+                    <div className="hidden sm:flex gap-4 text-xs text-base-content/40">
+                      {b.githubVerified && <span>🔥 {b.streak}j</span>}
+                      <span>🌿 {b.trophies}</span>
+                      <span>J{b.day}</span>
+                    </div>
+                    <span className="text-sm font-bold">{b.overboard ? "—" : `${b.commits}`}</span>
                   </div>
-                  <div className="hidden sm:flex gap-4 text-xs text-base-content/40">
-                    {b.githubVerified && <span>🔥 {b.streak}j</span>}
-                    <span>🌿 {b.trophies}</span>
-                    <span>J{b.day}</span>
-                  </div>
-                  <span className="text-sm font-bold">{b.overboard ? "—" : `${b.commits}`}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
