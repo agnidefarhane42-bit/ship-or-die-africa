@@ -1,25 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { sendTelegramMessage } from "@/lib/telegram";
+import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 
 /**
  * GET /api/cron/notify
- * Cron de notifications Telegram — protégé par CRON_SECRET.
- * Planifié à 6h30 UTC (voir vercel.json), après sync-missions (6h UTC),
- * pour que les rappels utilisent des commits/streak déjà synchronisés.
+ * Cron de notifications Telegram.
+ * Auth : Bearer CRON_SECRET OU header x-vercel-cron: 1
+ * Planifié à 6h30 UTC (voir vercel.json), après sync-missions (6h UTC).
  *
  * Pour chaque mission IN_PROGRESS dont l'utilisateur a un telegramChatId :
- *   1. Rappel quotidien (si notifyDailyReminder) : jours restants, commits du jour, streak
+ *   1. Rappel quotidien (si notifyDailyReminder)
  *   2. Alerte de deadline à J-7, J-3, J-1 (si notifyDeadlineAlert, sans doublon)
  *
- * Les paliers déjà notifiés sont stockés dans mission.deadlineAlertsNotified.
+ * Les paliers déjà notifiés sont stockés dans mission.deadlineAlertsNotified
+ * AVANT l'envoi Telegram (mieux vaut un rappel manqué qu'un spam).
  */
-export async function GET(req: NextRequest) {
-  // ── Vérification du secret ──
-  const authHeader = req.headers.get("authorization");
+function isAuthorizedCron(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
+  const authHeader = req.headers.get("authorization");
+  const isBearerOk = !!secret && authHeader === `Bearer ${secret}`;
+  const isVercelCron = req.headers.get("x-vercel-cron") === "1";
+  return isBearerOk || isVercelCron;
+}
 
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+export async function GET(req: NextRequest) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
@@ -41,6 +46,7 @@ export async function GET(req: NextRequest) {
       // ── Calcul des jours restants ──
       const msLeft = mission.deadline.getTime() - now.getTime();
       const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      const safeTitle = escapeHtml(mission.title);
 
       // ── Rappel quotidien (si autorisé) ──
       if (user.notifyDailyReminder) {
@@ -50,7 +56,7 @@ export async function GET(req: NextRequest) {
 
         const message =
           `🌳 <b>Rappel du jour</b>\n\n` +
-          `<b>${mission.title}</b>\n` +
+          `<b>${safeTitle}</b>\n` +
           `⏰ ${daysLeft} jours restants\n` +
           `💻 ${commitsToday} commit${commitsToday > 1 ? "s" : ""} aujourd'hui\n` +
           `🔥 Streak : ${mission.currentStreak} jour${mission.currentStreak > 1 ? "s" : ""}\n\n` +
@@ -61,6 +67,8 @@ export async function GET(req: NextRequest) {
       }
 
       // ── Alerte de deadline (J-7, J-3, J-1) ──
+      // Ordre : 1) check  2) persist en DB  3) envoi Telegram
+      // Si l'envoi échoue : on log, on ne retire pas le palier (anti-spam).
       if (user.notifyDeadlineAlert) {
         const alerts = mission.deadlineAlertsNotified as string[] | null;
         const alreadyNotified = alerts || [];
@@ -71,6 +79,13 @@ export async function GET(req: NextRequest) {
         else if (daysLeft === 1) alertLevel = "J-1";
 
         if (alertLevel && !alreadyNotified.includes(alertLevel)) {
+          // 1. Persister d'abord pour éviter les doublons si Telegram réussit mais update échoue plus tard
+          const updatedAlerts = [...alreadyNotified, alertLevel];
+          await prisma.mission.update({
+            where: { id: mission.id },
+            data: { deadlineAlertsNotified: updatedAlerts },
+          });
+
           const urgency =
             alertLevel === "J-7"
               ? "⚠️ Plus qu'une semaine !"
@@ -80,19 +95,20 @@ export async function GET(req: NextRequest) {
 
           const message =
             `${urgency}\n\n` +
-            `<b>${mission.title}</b>\n` +
+            `<b>${safeTitle}</b>\n` +
             `⏰ ${daysLeft} jour${daysLeft > 1 ? "s" : ""} restant${daysLeft > 1 ? "s" : ""} avant la deadline\n\n` +
             `C'est le moment de tout donner. 🌳`;
 
-          await sendTelegramMessage(user.telegramChatId, message);
-
-          // Enregistrer le palier comme notifié
-          const updatedAlerts = [...alreadyNotified, alertLevel];
-          await prisma.mission.update({
-            where: { id: mission.id },
-            data: { deadlineAlertsNotified: updatedAlerts },
-          });
-          alertsSent++;
+          try {
+            await sendTelegramMessage(user.telegramChatId, message);
+            alertsSent++;
+          } catch (sendErr) {
+            console.error(
+              `Deadline alert Telegram failed (mission=${mission.id}, level=${alertLevel}):`,
+              sendErr
+            );
+            // palier déjà en DB — pas de retry spam
+          }
         }
       }
     }
