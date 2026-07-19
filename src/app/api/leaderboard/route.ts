@@ -43,6 +43,8 @@ export async function GET() {
           trophies,
           githubUsername: u.githubUsername,
           githubVerified: u.githubVerified,
+          avatarUrl: u.avatarUrl,
+          image: u.image,
         };
       })
       .filter(Boolean)
