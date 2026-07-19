@@ -8,6 +8,7 @@ const links = [
   { href: "/dashboard/trophees", label: "Feuilles", icon: "🌿" },
   { href: "/dashboard/leaderboard", label: "Leaderboard", icon: "📈" },
   { href: "/dashboard/equipage", label: "Le Cercle", icon: "🌳" },
+  { href: "/recolte", label: "La Récolte", icon: "🌰" },
   { href: "/dashboard/settings", label: "Paramètres", icon: "⚙️" },
 ];
 

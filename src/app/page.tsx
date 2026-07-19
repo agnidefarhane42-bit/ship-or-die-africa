@@ -39,6 +39,7 @@ export default function Home() {
         </div>
         <div className="flex-none gap-2">
           <a href="#pricing" className="btn btn-ghost btn-sm text-base-content/70">Pricing</a>
+          <a href="/recolte" className="btn btn-ghost btn-sm text-base-content/70">🌰 La Récolte</a>
           <a href="#how" className="btn btn-ghost btn-sm text-base-content/70">Comment ça marche</a>
           <a href="/login" className="btn btn-gold btn-sm">Se connecter</a>
         </div>
@@ -271,6 +272,7 @@ export default function Home() {
           </div>
           <div className="flex gap-6 text-sm text-base-content/40">
             <a href="/login" className="hover:text-base-content">Se connecter</a>
+            <a href="/recolte" className="hover:text-base-content">🌰 La Récolte</a>
             <span>·</span>
             <span>© 2026</span>
           </div>
