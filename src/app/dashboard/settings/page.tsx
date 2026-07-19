@@ -55,23 +55,20 @@ export default function SettingsPage() {
 
     (async () => {
       try {
-        // Charger les préférences depuis update-profile (GET n'existe pas, on prend les valeurs par défaut)
-        // On utilise les valeurs de la session si disponibles, sinon on laisse les défauts
+        // Charger la mission active
         const res = await fetch("/api/missions");
         const data = await res.json();
         if (data.missions?.length > 0) {
           setMission(data.missions[0]);
         }
 
-        // Récupérer les préférences actuelles via le profil
-        // On déclenche un PATCH "vide" pour récupérer l'état actuel
-        const profileRes = await fetch("/api/auth/update-profile", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
+        // Charger le profil via GET (plus de PATCH vide)
+        const profileRes = await fetch("/api/auth/update-profile");
         if (profileRes.ok) {
           const profileData = await profileRes.json();
+          if (profileData.name) setName(profileData.name);
+          if (profileData.bio !== undefined) setBio(profileData.bio || "");
+          if (profileData.githubUsername) setGithub(profileData.githubUsername);
           if (profileData.notifyDailyReminder !== undefined) setNotifyDailyReminder(profileData.notifyDailyReminder);
           if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
           if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
