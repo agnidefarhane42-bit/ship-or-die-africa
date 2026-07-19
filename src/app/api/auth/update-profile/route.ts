@@ -2,6 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 
+/**
+ * GET /api/auth/update-profile
+ * Retourne le profil de l'utilisateur connecté (name, bio, github, préférences, telegram).
+ * Remplace le hack PATCH avec body vide côté settings.
+ */
+export async function GET() {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        bio: true,
+        githubUsername: true,
+        githubVerified: true,
+        telegramChatId: true,
+        notifyDailyReminder: true,
+        notifyDeadlineAlert: true,
+        notifyTrophyUnlocked: true,
+        notifySomeoneShipped: true,
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 });
+    }
+
+    return NextResponse.json(user);
+  } catch (err) {
+    console.error("Get profile error:", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const session = await auth();
