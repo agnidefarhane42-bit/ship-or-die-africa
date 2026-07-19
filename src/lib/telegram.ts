@@ -2,9 +2,23 @@
 // telegram.ts — Intégration Telegram Bot pour les notifications
 // ============================================================================
 // Fonctions :
+//   - escapeHtml(s) : échappe le contenu user pour parse_mode HTML
 //   - sendTelegramMessage(chatId, text) : envoyer un message HTML à un chat
 //   - generateLinkCode() : générer un code court à usage unique pour lier un compte
 // ============================================================================
+
+/**
+ * Échappe les caractères spéciaux HTML pour parse_mode: "HTML" Telegram.
+ * À appliquer sur toute chaîne dynamique (title, name, etc.), pas sur les balises contrôlées.
+ */
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, """)
+    .replace(/'/g, "&#39;");
+}
 
 /**
  * Envoie un message à un chat Telegram via le Bot API.
