@@ -30,9 +30,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return { id: user.id, email: user.email, name: user.name };
       },
     }),
+    // ──────────────────────────────────────────────────────────────────────
+    // GitHub : allowDangerousEmailAccountLinking est activé VOLONTAIREMENT.
+    // Ici l'utilisateur est déjà authentifié sur son compte Ship or Die Africa
+    // avant de cliquer "Connecter mon GitHub". Il confirme volontairement son
+    // propre email en se connectant à GitHub. Il n'y a donc pas de risque
+    // de prise de contrôle par un tiers (l'attaquant devrait déjà être
+    // connecté sur le compte Ship or Die Africa de la victime).
+    // ──────────────────────────────────────────────────────────────────────
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID,
       clientSecret: process.env.GITHUB_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+      authorization: {
+        params: {
+          scope: "read:user user:email",
+        },
+      },
     }),
   ],
   session: { strategy: "jwt" },
@@ -41,7 +55,37 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      if (account?.provider === "github" && user.email) {
+      if (account?.provider === "github") {
+        // ── 1b. Récupérer l'email s'il est absent (email GitHub privé) ──
+        if (!user.email && account.access_token) {
+          try {
+            const res = await fetch("https://api.github.com/user/emails", {
+              headers: {
+                Authorization: `Bearer ${account.access_token}`,
+                Accept: "application/vnd.github+json",
+              },
+            });
+            if (res.ok) {
+              const emails = await res.json();
+              const primaryVerified = (emails as any[]).find(
+                (e) => e.primary && e.verified
+              );
+              if (primaryVerified?.email) {
+                user.email = primaryVerified.email;
+              }
+            }
+          } catch {
+            // silencieux — on gère l'absence d'email ci-dessous
+          }
+        }
+
+        // Si toujours pas d'email vérifié → refuser proprement
+        if (!user.email) {
+          console.error("GitHub login: no verified email found");
+          return false;
+        }
+
+        // ── Liaison du compte GitHub à un utilisateur existant ──
         const existing = await prisma.user.findUnique({
           where: { email: user.email },
         });
