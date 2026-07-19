@@ -26,6 +26,16 @@ model User {
   bio           String?
   avatarUrl     String?
 
+  // ---- Telegram (notifications) ----
+  telegramChatId    String?
+  telegramLinkCode  String? @unique
+
+  // ---- Préférences de notifications ----
+  notifyDailyReminder   Boolean @default(true)
+  notifyDeadlineAlert   Boolean @default(true)
+  notifyTrophyUnlocked  Boolean @default(true)
+  notifySomeoneShipped  Boolean @default(false)
+
   // ---- Cohorte ----
   cohortId      String?   @db.ObjectId
   joinedAt      DateTime  @default(now())
@@ -69,6 +79,10 @@ model Mission {
   // Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
   // Construit à partir des dates de commits lors de la synchronisation
   commitsByDay  Json?
+
+  // ---- Alertes de deadline déjà envoyées (pour éviter les doublons) ----
+  // Format: ["J-7", "J-3", "J-1"]
+  deadlineAlertsNotified Json?
 
   trophies    Trophy[]
 
