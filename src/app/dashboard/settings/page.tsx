@@ -3,6 +3,8 @@
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AvatarUploader from "@/components/AvatarUploader";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type Mission = {
   id: string;
@@ -24,6 +26,11 @@ export default function SettingsPage() {
   const [abandoning, setAbandoning] = useState(false);
   const [abandonMsg, setAbandonMsg] = useState("");
 
+  // Avatar state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [oauthImage, setOauthImage] = useState<string | null>(null);
+  const [githubVerified, setGithubVerified] = useState(false);
+
   // Telegram state
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramLinking, setTelegramLinking] = useState(false);
@@ -39,13 +46,20 @@ export default function SettingsPage() {
   const [isPublicSuccess, setIsPublicSuccess] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
 
-  const githubConnected = (session?.user as any)?.githubVerified === true;
-  const githubUsername = (session?.user as any)?.githubUsername;
+  const githubConnected = (session?.user as any)?.githubVerified === true || githubVerified;
+  const githubUsername = (session?.user as any)?.githubUsername || github;
 
-  // Le username du bot Telegram (à remplacer par le vrai username)
   const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "ShipOrDieAfricaBot";
 
-  // Pré-remplir avec les données de la session + charger la mission + préférences
+  const displayAvatarUrl = getAvatarUrl({
+    avatarUrl,
+    image: oauthImage,
+    githubUsername,
+    githubVerified: githubConnected,
+  });
+
+  const isGitHubFallback = !avatarUrl && !!displayAvatarUrl;
+
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
@@ -55,20 +69,21 @@ export default function SettingsPage() {
 
     (async () => {
       try {
-        // Charger la mission active
         const res = await fetch("/api/missions");
         const data = await res.json();
         if (data.missions?.length > 0) {
           setMission(data.missions[0]);
         }
 
-        // Charger le profil via GET (plus de PATCH vide)
         const profileRes = await fetch("/api/auth/update-profile");
         if (profileRes.ok) {
           const profileData = await profileRes.json();
           if (profileData.name) setName(profileData.name);
           if (profileData.bio !== undefined) setBio(profileData.bio || "");
           if (profileData.githubUsername) setGithub(profileData.githubUsername);
+          if (profileData.avatarUrl) setAvatarUrl(profileData.avatarUrl);
+          if (profileData.image) setOauthImage(profileData.image);
+          if (profileData.githubVerified) setGithubVerified(true);
           if (profileData.notifyDailyReminder !== undefined) setNotifyDailyReminder(profileData.notifyDailyReminder);
           if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
           if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
@@ -128,7 +143,7 @@ export default function SettingsPage() {
         setTimeout(() => setNotifySuccess(false), 3000);
       }
     } catch {
-      // silencieux — l'utilisateur peut réessayer
+      // silencieux
     } finally {
       setNotifySaving(false);
     }
@@ -145,7 +160,6 @@ export default function SettingsPage() {
         setTelegramError(data.error || "Erreur");
         return;
       }
-      // Ouvrir le lien Telegram avec le code
       window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${data.code}`, "_blank");
     } catch {
       setTelegramError("Erreur réseau");
@@ -194,7 +208,7 @@ export default function SettingsPage() {
         body: JSON.stringify({ missionId: mission.id, isPublic: value }),
       });
       if (res.ok) {
-        setMission((m) => m ? { ...m, isPublic: value } : m);
+        setMission((m) => (m ? { ...m, isPublic: value } : m));
         setIsPublicSuccess(true);
         setTimeout(() => setIsPublicSuccess(false), 3000);
       }
@@ -225,6 +239,21 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <h1 className="text-2xl sm:text-3xl font-black">⚙️ Paramètres</h1>
+
+      {/* Photo de profil */}
+      <div className="card-glow rounded-2xl p-6 space-y-4">
+        <h2 className="font-bold text-lg">Photo de profil</h2>
+        <AvatarUploader
+          currentUrl={displayAvatarUrl}
+          fallbackInitials={name || session?.user?.name || "?"}
+          onUploaded={(url) => setAvatarUrl(url)}
+        />
+        {isGitHubFallback && (
+          <p className="text-xs text-base-content/40">
+            Avatar récupéré depuis GitHub — uploade une photo pour le remplacer.
+          </p>
+        )}
+      </div>
 
       {/* Profile */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
@@ -309,7 +338,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Saisie manuelle du username (fallback si pas d'OAuth) */}
         <div className="border-t border-base-content/10 pt-4 mt-2">
           <label className="label">
             <span className="label-text text-base-content/60">Username GitHub (manuel)</span>
@@ -371,7 +399,7 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Notifications — vraies préférences */}
+      {/* Notifications */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">🔔 Préférences de notifications</h2>
         <p className="text-sm text-base-content/50">
@@ -440,7 +468,7 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Email (lecture seule) */}
+      {/* Email */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <h2 className="font-bold text-lg">📧 Email</h2>
         <p className="text-base-content/70 font-mono text-sm bg-base-200 rounded-xl px-4 py-3">
