@@ -91,7 +91,7 @@ export default function SettingsPage() {
           if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
           if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
           if (profileData.notifySomeoneShipped !== undefined) setNotifySomeoneShipped(profileData.notifySomeoneShipped);
-          if (profileData.notifyGroupOnShipFail !== undefined) setNotifyGroupOnShipFail(profileData.notifyGroupOnShipFail);
+          setNotifyGroupOnShipFail(profileData.notifyGroupOnShipFail ?? true);
           setTelegramConnected(!!profileData.telegramChatId);
         }
       } catch {
