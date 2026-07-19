@@ -78,17 +78,18 @@ export default function SettingsPage() {
         const profileRes = await fetch("/api/auth/update-profile");
         if (profileRes.ok) {
           const profileData = await profileRes.json();
-          if (profileData.name) setName(profileData.name);
-          if (profileData.bio !== undefined) setBio(profileData.bio || "");
-          if (profileData.githubUsername) setGithub(profileData.githubUsername);
-          if (profileData.avatarUrl) setAvatarUrl(profileData.avatarUrl);
-          if (profileData.image) setOauthImage(profileData.image);
-          if (profileData.githubVerified) setGithubVerified(true);
+          // Toujours assigner (y compris null) pour permettre un reset légitime
+          setName(profileData.name ?? "");
+          setBio(profileData.bio ?? "");
+          setGithub(profileData.githubUsername ?? "");
+          setAvatarUrl(profileData.avatarUrl ?? null);
+          setOauthImage(profileData.image ?? null);
+          setGithubVerified(!!profileData.githubVerified);
           if (profileData.notifyDailyReminder !== undefined) setNotifyDailyReminder(profileData.notifyDailyReminder);
           if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
           if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
           if (profileData.notifySomeoneShipped !== undefined) setNotifySomeoneShipped(profileData.notifySomeoneShipped);
-          if (profileData.telegramChatId) setTelegramConnected(true);
+          setTelegramConnected(!!profileData.telegramChatId);
         }
       } catch {
         // silencieux
@@ -246,7 +247,9 @@ export default function SettingsPage() {
         <AvatarUploader
           currentUrl={displayAvatarUrl}
           fallbackInitials={name || session?.user?.name || "?"}
+          canDelete={!!avatarUrl}
           onUploaded={(url) => setAvatarUrl(url)}
+          onDeleted={() => setAvatarUrl(null)}
         />
         {isGitHubFallback && (
           <p className="text-xs text-base-content/40">
