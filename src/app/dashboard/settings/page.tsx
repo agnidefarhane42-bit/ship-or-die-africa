@@ -23,14 +23,23 @@ export default function SettingsPage() {
   const [abandoning, setAbandoning] = useState(false);
   const [abandonMsg, setAbandonMsg] = useState("");
 
+  // Telegram state
+  const [telegramConnected, setTelegramConnected] = useState(false);
+  const [telegramLinking, setTelegramLinking] = useState(false);
+  const [telegramError, setTelegramError] = useState("");
+
   const githubConnected = (session?.user as any)?.githubVerified === true;
   const githubUsername = (session?.user as any)?.githubUsername;
+
+  // Le username du bot Telegram (à remplacer par le vrai username)
+  const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "ShipOrDieAfricaBot";
 
   // Pré-remplir avec les données de la session + charger la mission
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
       setGithub((session.user as any).githubUsername || "");
+      setTelegramConnected(!!(session.user as any).telegramChatId);
     }
 
     (async () => {
@@ -69,6 +78,26 @@ export default function SettingsPage() {
       setError("Erreur réseau. Réessaie.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleLinkTelegram = async () => {
+    setTelegramLinking(true);
+    setTelegramError("");
+
+    try {
+      const res = await fetch("/api/telegram/generate-link-code");
+      const data = await res.json();
+      if (!res.ok) {
+        setTelegramError(data.error || "Erreur");
+        return;
+      }
+      // Ouvrir le lien Telegram avec le code
+      window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=${data.code}`, "_blank");
+    } catch {
+      setTelegramError("Erreur réseau");
+    } finally {
+      setTelegramLinking(false);
     }
   };
 
@@ -216,6 +245,47 @@ export default function SettingsPage() {
             {saving ? "Sauvegarde..." : "💾 Sauvegarder GitHub"}
           </button>
         </div>
+      </div>
+
+      {/* Telegram */}
+      <div className="card-glow rounded-2xl p-6 space-y-4">
+        <h2 className="font-bold text-lg">📨 Connexion Telegram</h2>
+        <p className="text-sm text-base-content/50">
+          Lie ton compte Telegram pour recevoir tes rappels quotidiens et tes alertes de deadline.
+        </p>
+
+        {telegramError && (
+          <div className="alert alert-error text-sm">
+            <span>{telegramError}</span>
+          </div>
+        )}
+
+        {telegramConnected ? (
+          <div className="flex items-center justify-between p-4 bg-base-content/5 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-base-content/10 flex items-center justify-center text-xl">📨</div>
+              <div>
+                <p className="font-bold text-sm">Telegram</p>
+                <p className="text-xs text-success">✅ Connecté</p>
+              </div>
+            </div>
+            <button className="btn btn-ghost btn-sm" disabled>Connecté</button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-4">
+            <div className="w-12 h-12 rounded-full bg-base-content/5 flex items-center justify-center text-2xl opacity-50">📨</div>
+            <p className="text-xs text-base-content/40 text-center max-w-xs">
+              Clique sur le bouton, puis envoie le message pré-rempli au bot Telegram pour lier ton compte.
+            </p>
+            <button
+              onClick={handleLinkTelegram}
+              disabled={telegramLinking}
+              className="btn btn-pirate"
+            >
+              {telegramLinking ? "Génération..." : "📨 Lier mon Telegram"}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Notifications — bientôt disponible */}
