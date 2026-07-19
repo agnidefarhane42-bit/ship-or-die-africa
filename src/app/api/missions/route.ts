@@ -3,6 +3,35 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendTelegramMessage } from "@/lib/telegram";
 
+/** Libellés Baobab pour les trophées attribués au ship */
+const TROPHY_LABELS: Record<string, string> = {
+  SHIPPED: "Fruit récolté",
+  EARLY_BIRD: "Premier au Cercle",
+};
+
+/** Notifie l'utilisateur qui a débloqué une feuille (pas les autres membres). */
+async function notifyTrophyUnlocked(
+  user: {
+    telegramChatId?: string | null;
+    notifyTrophyUnlocked?: boolean;
+  } | null | undefined,
+  type: string,
+  missionTitle?: string
+) {
+  if (!user?.notifyTrophyUnlocked || !user.telegramChatId) return;
+  try {
+    const label = TROPHY_LABELS[type] || type;
+    const message =
+      `🌿 <b>Nouvelle feuille débloquée !</b>\n\n` +
+      `${label}\n` +
+      (missionTitle ? `<i>${missionTitle}</i>\n\n` : "\n") +
+      `Continue de pousser. 🌳`;
+    await sendTelegramMessage(user.telegramChatId, message);
+  } catch (err) {
+    console.error("notifyTrophyUnlocked error:", err);
+  }
+}
+
 // Créer une mission
 export async function POST(req: NextRequest) {
   try {
@@ -198,7 +227,7 @@ export async function PATCH(req: NextRequest) {
         }
       }
 
-      const updated = await prisma.mission.update({
+      await prisma.mission.update({
         where: { id: missionId },
         data: updateData,
         include: { trophies: true },
@@ -210,6 +239,8 @@ export async function PATCH(req: NextRequest) {
           await prisma.trophy.create({
             data: { missionId, type: "SHIPPED" },
           });
+          // Notif « feuille débloquée » pour le shipper (pas les autres)
+          await notifyTrophyUnlocked(mission.user, "SHIPPED", mission.title);
         } catch {
           // déjà existant grâce à @@unique
         }
@@ -220,6 +251,7 @@ export async function PATCH(req: NextRequest) {
             await prisma.trophy.create({
               data: { missionId, type: "EARLY_BIRD" },
             });
+            await notifyTrophyUnlocked(mission.user, "EARLY_BIRD", mission.title);
           } catch {
             // déjà existant
           }
