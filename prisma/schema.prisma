@@ -86,8 +86,7 @@ model Mission {
 
   // ---- Historique des commits par jour ----
   // Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
-  // Construit à partir des dates de commits lors de la synchronisation
-  // Clés en UTC (YYYY-MM-DD). Note: pour les users WAT (UTC+1) un commit tardif peut basculer au jour suivant.
+  // Clés = jours civils Africa/Lagos (WAT), voir sync-mission.ts
   commitsByDay  Json?
 
   // ---- Alertes de deadline déjà envoyées (pour éviter les doublons) ----
@@ -98,6 +97,10 @@ model Mission {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([userId, status])
+  @@index([status, shippedAt])
+  @@index([status, deadline])
 }
 
 enum MissionStatus {
@@ -116,6 +119,7 @@ model Trophy {
   awardedAt   DateTime @default(now())
 
   @@unique([missionId, type])
+  @@index([type])
 }
 
 // TrophyType — Les valeurs restent identiques en base (ne pas renommer).
@@ -143,6 +147,8 @@ model Payment {
   paidAt      DateTime?
 
   createdAt   DateTime @default(now())
+
+  @@index([userId, status])
 }
 
 enum PaymentStatus {
