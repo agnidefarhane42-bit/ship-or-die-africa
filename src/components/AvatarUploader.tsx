@@ -1,11 +1,15 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Cropper, { Area } from "react-easy-crop";
 
 type Props = {
   currentUrl?: string | null;
   onUploaded: (newUrl: string) => void;
+  /** Appelé après suppression réussie de la photo custom */
+  onDeleted?: () => void;
+  /** true si l'utilisateur a une photo custom (avatarUrl) — affiche le bouton Supprimer */
+  canDelete?: boolean;
   fallbackInitials?: string;
 };
 
@@ -16,7 +20,6 @@ async function getCroppedBlob(
   const image = await createImage(imageSrc);
   const canvas = document.createElement("canvas");
   const size = Math.min(pixelCrop.width, pixelCrop.height);
-  // Sortie carrée raisonnable pour un avatar
   const outputSize = Math.min(512, Math.round(size));
   canvas.width = outputSize;
   canvas.height = outputSize;
@@ -60,6 +63,8 @@ function createImage(url: string): Promise<HTMLImageElement> {
 export default function AvatarUploader({
   currentUrl,
   onUploaded,
+  onDeleted,
+  canDelete = false,
   fallbackInitials = "?",
 }: Props) {
   const [croppingSrc, setCroppingSrc] = useState<string | null>(null);
@@ -67,8 +72,14 @@ export default function AvatarUploader({
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentUrl || null);
+
+  // Resync l'aperçu si le parent change currentUrl (ex: après DELETE)
+  useEffect(() => {
+    setPreviewUrl(currentUrl || null);
+  }, [currentUrl]);
 
   const onCropComplete = useCallback((_: Area, pixels: Area) => {
     setCroppedAreaPixels(pixels);
@@ -95,7 +106,6 @@ export default function AvatarUploader({
       setCrop({ x: 0, y: 0 });
     };
     reader.readAsDataURL(file);
-    // reset input pour permettre de re-sélectionner le même fichier
     e.target.value = "";
   };
 
@@ -130,6 +140,31 @@ export default function AvatarUploader({
     }
   };
 
+  const handleDelete = async () => {
+    if (!canDelete) return;
+    if (!confirm("Supprimer ta photo de profil ?")) return;
+
+    setDeleting(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/upload/avatar", { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de la suppression");
+        return;
+      }
+
+      setPreviewUrl(null);
+      onDeleted?.();
+    } catch {
+      setError("Erreur réseau lors de la suppression.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const displayUrl = previewUrl || currentUrl;
 
   return (
@@ -142,7 +177,7 @@ export default function AvatarUploader({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={displayUrl}
-                  alt="Avatar"
+                  alt="Photo de profil"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -159,15 +194,29 @@ export default function AvatarUploader({
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
             onChange={handleFileChange}
-            disabled={loading}
+            disabled={loading || deleting}
           />
           <span className="absolute bottom-0 right-0 bg-warning text-base-100 text-xs rounded-full w-6 h-6 flex items-center justify-center shadow">
             ✎
           </span>
         </label>
-        <div className="text-sm text-base-content/50">
+        <div className="text-sm text-base-content/50 space-y-1">
           <p className="font-medium text-base-content/70">Changer la photo</p>
           <p className="text-xs">JPEG, PNG ou WebP · max 2 Mo</p>
+          {canDelete && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs text-error mt-1"
+              onClick={handleDelete}
+              disabled={loading || deleting}
+            >
+              {deleting ? (
+                <span className="loading loading-spinner loading-xs" />
+              ) : (
+                "Supprimer la photo"
+              )}
+            </button>
+          )}
         </div>
       </div>
 
@@ -177,7 +226,6 @@ export default function AvatarUploader({
         </div>
       )}
 
-      {/* Modale de recadrage */}
       {croppingSrc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div className="card-glow rounded-2xl p-4 w-full max-w-md space-y-4 bg-base-100">
