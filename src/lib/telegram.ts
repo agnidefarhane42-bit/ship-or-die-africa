@@ -55,6 +55,22 @@ export async function sendTelegramMessage(
 }
 
 /**
+ * Envoie un message au groupe Telegram de la communauté.
+ * Utilise TELEGRAM_GROUP_CHAT_ID. Si la variable n'est pas configurée,
+ * log un warning et ne fait rien (ne casse rien si le groupe n'existe pas encore).
+ *
+ * @param text  Le contenu du message (HTML supporté)
+ */
+export async function sendGroupMessage(text: string): Promise<void> {
+  const groupChatId = process.env.TELEGRAM_GROUP_CHAT_ID;
+  if (!groupChatId) {
+    console.warn("TELEGRAM_GROUP_CHAT_ID non configuré — message de groupe ignoré");
+    return;
+  }
+  await sendTelegramMessage(groupChatId, text);
+}
+
+/**
  * Génère un code aléatoire court (6 caractères alphanumériques majuscules).
  * Utilisé pour lier un compte Ship or Die Africa à un chat Telegram.
  * Le code est à usage unique et stocké dans user.telegramLinkCode.

@@ -159,7 +159,18 @@ export default function EquipagePage() {
         <div className="text-4xl mb-3">💬</div>
         <h2 className="font-bold text-lg mb-2">Groupe Telegram de la cohorte</h2>
         <p className="text-sm text-base-content/50 mb-4">Check-ins quotidiens, entraide, et accountability en temps réel.</p>
-        <span className="text-sm text-base-content/40 italic">Bientôt disponible — le lien sera partagé au lancement de la cohorte.</span>
+        {process.env.NEXT_PUBLIC_TELEGRAM_GROUP_INVITE_LINK ? (
+          <a
+            href={process.env.NEXT_PUBLIC_TELEGRAM_GROUP_INVITE_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-pirate"
+          >
+            💬 Rejoindre le groupe Telegram
+          </a>
+        ) : (
+          <span className="text-sm text-base-content/40 italic">Bientôt disponible — le lien sera partagé au lancement de la cohorte.</span>
+        )}
       </div>
     </div>
   );
