@@ -46,8 +46,8 @@ export default function SettingsPage() {
   const [isPublicSuccess, setIsPublicSuccess] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
 
-  const githubConnected = (session?.user as any)?.githubVerified === true || githubVerified;
-  const githubUsername = (session?.user as any)?.githubUsername || github;
+  const githubConnected = session?.user?.githubVerified === true || githubVerified;
+  const githubUsername = session?.user?.githubUsername || github;
 
   const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "ShipOrDieAfricaBot";
 
@@ -63,8 +63,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
-      setGithub((session.user as any).githubUsername || "");
-      setTelegramConnected(!!(session.user as any).telegramChatId);
+      setGithub(session.user.githubUsername || "");
+      setTelegramConnected(!!session.user.telegramChatId);
     }
 
     (async () => {
