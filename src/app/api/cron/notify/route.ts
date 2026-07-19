@@ -5,6 +5,8 @@ import { sendTelegramMessage } from "@/lib/telegram";
 /**
  * GET /api/cron/notify
  * Cron de notifications Telegram — protégé par CRON_SECRET.
+ * Planifié à 6h30 UTC (voir vercel.json), après sync-missions (6h UTC),
+ * pour que les rappels utilisent des commits/streak déjà synchronisés.
  *
  * Pour chaque mission IN_PROGRESS dont l'utilisateur a un telegramChatId :
  *   1. Rappel quotidien (si notifyDailyReminder) : jours restants, commits du jour, streak
