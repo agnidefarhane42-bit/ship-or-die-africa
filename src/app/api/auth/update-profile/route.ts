@@ -9,15 +9,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { name, bio, githubUsername } = await req.json();
+    const body = await req.json();
+    const { name, bio, githubUsername } = body;
+
+    // ── Préférences de notifications (optionnel) ──
+    const notifyDailyReminder = typeof body.notifyDailyReminder === "boolean" ? body.notifyDailyReminder : undefined;
+    const notifyDeadlineAlert = typeof body.notifyDeadlineAlert === "boolean" ? body.notifyDeadlineAlert : undefined;
+    const notifyTrophyUnlocked = typeof body.notifyTrophyUnlocked === "boolean" ? body.notifyTrophyUnlocked : undefined;
+    const notifySomeoneShipped = typeof body.notifySomeoneShipped === "boolean" ? body.notifySomeoneShipped : undefined;
+
+    // Construire l'objet data — ne mettre à jour que les champs fournis
+    const data: any = {};
+    if (name !== undefined) data.name = name || null;
+    if (bio !== undefined) data.bio = bio || null;
+    if (githubUsername !== undefined) data.githubUsername = githubUsername || null;
+    if (notifyDailyReminder !== undefined) data.notifyDailyReminder = notifyDailyReminder;
+    if (notifyDeadlineAlert !== undefined) data.notifyDeadlineAlert = notifyDeadlineAlert;
+    if (notifyTrophyUnlocked !== undefined) data.notifyTrophyUnlocked = notifyTrophyUnlocked;
+    if (notifySomeoneShipped !== undefined) data.notifySomeoneShipped = notifySomeoneShipped;
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
-      data: {
-        name: name || null,
-        bio: bio || null,
-        githubUsername: githubUsername || null,
-      },
+      data,
     });
 
     return NextResponse.json({
@@ -25,6 +38,11 @@ export async function PATCH(req: NextRequest) {
       name: updated.name,
       bio: updated.bio,
       githubUsername: updated.githubUsername,
+      notifyDailyReminder: updated.notifyDailyReminder,
+      notifyDeadlineAlert: updated.notifyDeadlineAlert,
+      notifyTrophyUnlocked: updated.notifyTrophyUnlocked,
+      notifySomeoneShipped: updated.notifySomeoneShipped,
+      telegramChatId: updated.telegramChatId,
     });
   } catch (err) {
     console.error("Update profile error:", err);

@@ -28,13 +28,21 @@ export default function SettingsPage() {
   const [telegramLinking, setTelegramLinking] = useState(false);
   const [telegramError, setTelegramError] = useState("");
 
+  // Notification preferences state
+  const [notifyDailyReminder, setNotifyDailyReminder] = useState(true);
+  const [notifyDeadlineAlert, setNotifyDeadlineAlert] = useState(true);
+  const [notifyTrophyUnlocked, setNotifyTrophyUnlocked] = useState(true);
+  const [notifySomeoneShipped, setNotifySomeoneShipped] = useState(false);
+  const [notifySaving, setNotifySaving] = useState(false);
+  const [notifySuccess, setNotifySuccess] = useState(false);
+
   const githubConnected = (session?.user as any)?.githubVerified === true;
   const githubUsername = (session?.user as any)?.githubUsername;
 
   // Le username du bot Telegram (à remplacer par le vrai username)
   const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME || "ShipOrDieAfricaBot";
 
-  // Pré-remplir avec les données de la session + charger la mission
+  // Pré-remplir avec les données de la session + charger la mission + préférences
   useEffect(() => {
     if (session?.user) {
       setName(session.user.name || "");
@@ -44,10 +52,28 @@ export default function SettingsPage() {
 
     (async () => {
       try {
+        // Charger les préférences depuis update-profile (GET n'existe pas, on prend les valeurs par défaut)
+        // On utilise les valeurs de la session si disponibles, sinon on laisse les défauts
         const res = await fetch("/api/missions");
         const data = await res.json();
         if (data.missions?.length > 0) {
           setMission(data.missions[0]);
+        }
+
+        // Récupérer les préférences actuelles via le profil
+        // On déclenche un PATCH "vide" pour récupérer l'état actuel
+        const profileRes = await fetch("/api/auth/update-profile", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (profileRes.ok) {
+          const profileData = await profileRes.json();
+          if (profileData.notifyDailyReminder !== undefined) setNotifyDailyReminder(profileData.notifyDailyReminder);
+          if (profileData.notifyDeadlineAlert !== undefined) setNotifyDeadlineAlert(profileData.notifyDeadlineAlert);
+          if (profileData.notifyTrophyUnlocked !== undefined) setNotifyTrophyUnlocked(profileData.notifyTrophyUnlocked);
+          if (profileData.notifySomeoneShipped !== undefined) setNotifySomeoneShipped(profileData.notifySomeoneShipped);
+          if (profileData.telegramChatId) setTelegramConnected(true);
         }
       } catch {
         // silencieux
@@ -78,6 +104,33 @@ export default function SettingsPage() {
       setError("Erreur réseau. Réessaie.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveNotifPrefs = async () => {
+    setNotifySaving(true);
+    setNotifySuccess(false);
+
+    try {
+      const res = await fetch("/api/auth/update-profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          notifyDailyReminder,
+          notifyDeadlineAlert,
+          notifyTrophyUnlocked,
+          notifySomeoneShipped,
+        }),
+      });
+
+      if (res.ok) {
+        setNotifySuccess(true);
+        setTimeout(() => setNotifySuccess(false), 3000);
+      }
+    } catch {
+      // silencieux — l'utilisateur peut réessayer
+    } finally {
+      setNotifySaving(false);
     }
   };
 
@@ -138,6 +191,13 @@ export default function SettingsPage() {
   }
 
   const canAbandon = mission && mission.status === "IN_PROGRESS";
+
+  const notifToggles = [
+    { key: "notifyDailyReminder", label: "📅 Rappel quotidien", desc: "Reçois un récap chaque jour (jours restants, commits, streak)", value: notifyDailyReminder, setter: setNotifyDailyReminder },
+    { key: "notifyDeadlineAlert", label: "⏰ Alertes de deadline", desc: "Notification à J-7, J-3 et J-1 avant la deadline", value: notifyDeadlineAlert, setter: setNotifyDeadlineAlert },
+    { key: "notifyTrophyUnlocked", label: "🌿 Feuilles débloquées", desc: "Notification quand tu gagnes une nouvelle feuille", value: notifyTrophyUnlocked, setter: setNotifyTrophyUnlocked },
+    { key: "notifySomeoneShipped", label: "🌰 Quelqu'un a shippé", desc: "Notification quand un autre bâtisseur termine sa mission", value: notifySomeoneShipped, setter: setNotifySomeoneShipped },
+  ];
 
   return (
     <div className="space-y-6 max-w-2xl">
@@ -288,10 +348,43 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Notifications — bientôt disponible */}
+      {/* Notifications — vraies préférences */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
-        <h2 className="font-bold text-lg">🔔 Notifications</h2>
-        <p className="text-sm text-base-content/40 italic">Notifications — bientôt disponible.</p>
+        <h2 className="font-bold text-lg">🔔 Préférences de notifications</h2>
+        <p className="text-sm text-base-content/50">
+          Choisis les notifications que tu veux recevoir sur Telegram.
+        </p>
+
+        {notifySuccess && (
+          <div className="alert alert-success text-sm">
+            <span>✅ Préférences sauvegardées !</span>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {notifToggles.map((t) => (
+            <div key={t.key} className="flex items-center justify-between gap-4 p-3 bg-base-content/5 rounded-xl">
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">{t.label}</p>
+                <p className="text-xs text-base-content/40">{t.desc}</p>
+              </div>
+              <input
+                type="checkbox"
+                className="toggle toggle-warning"
+                checked={t.value}
+                onChange={(e) => t.setter(e.target.checked)}
+              />
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={handleSaveNotifPrefs}
+          disabled={notifySaving}
+          className="btn btn-warning btn-sm"
+        >
+          {notifySaving ? "Sauvegarde..." : "💾 Sauvegarder les préférences"}
+        </button>
       </div>
 
       {/* Email (lecture seule) */}
