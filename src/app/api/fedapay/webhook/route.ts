@@ -64,7 +64,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "userId manquant dans metadata" }, { status: 400 });
     }
 
-    const fedapayId = String(entity?.id || entity?.transaction_id || "");
+    const fedapayId = String(entity?.id || entity?.transaction_id || "").trim();
+    if (!fedapayId) {
+      console.error("FedaPay webhook: entity.id manquant", entity);
+      return NextResponse.json({ error: "fedapayId manquant" }, { status: 400 });
+    }
+
     const isPaid =
       entity?.status === "approved" ||
       entity?.status === "paid" ||
