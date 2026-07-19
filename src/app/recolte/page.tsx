@@ -5,11 +5,12 @@ const PAGE_SIZE = 24;
 export const dynamic = "force-dynamic";
 
 type Props = {
-  searchParams: { page?: string };
+  searchParams: Promise<{ page?: string }>;
 };
 
 export default async function RecoltePage({ searchParams }: Props) {
-  const page = Math.max(1, parseInt(searchParams.page || "1", 10));
+  const { page: pageParam } = await searchParams;
+  const page = Math.max(1, parseInt(pageParam || "1", 10));
   const skip = (page - 1) * PAGE_SIZE;
 
   const [missions, total] = await Promise.all([
