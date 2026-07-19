@@ -1,6 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { sendTelegramMessage } from "@/lib/telegram";
+
+/**
+ * Helper : retourne la mission active d'un user (IN_PROGRESS la plus récente,
+ * sinon la dernière créée).
+ */
+export async function getActiveMission(userId: string) {
+  const inProgress = await prisma.mission.findFirst({
+    where: { userId, status: "IN_PROGRESS" },
+    include: { trophies: true },
+    orderBy: { createdAt: "desc" },
+  });
+  if (inProgress) return inProgress;
+
+  return prisma.mission.findFirst({
+    where: { userId },
+    include: { trophies: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
 
 // Créer une mission
 export async function POST(req: NextRequest) {
@@ -8,6 +28,20 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
+    // ── Gate de paiement ──
+    // Un utilisateur doit avoir au moins un Payment PAID pour créer une mission.
+    // Soft alternative possible : autoriser la création mais bloquer le ship.
+    // Choix actuel : hard gate pour garder l'intégrité de la cohorte.
+    const paid = await prisma.payment.findFirst({
+      where: { userId: session.user.id, status: "PAID" },
+    });
+    if (!paid) {
+      return NextResponse.json(
+        { error: "Paiement requis pour créer une mission. Rejoins le Cercle d'abord." },
+        { status: 402 }
+      );
     }
 
     const { title, description, repoUrl, url } = await req.json();
@@ -30,6 +64,7 @@ export async function POST(req: NextRequest) {
         startedAt,
         deadline,
         status: "IN_PROGRESS",
+        pauseDaysUsed: 0,
       },
     });
 
@@ -40,7 +75,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Récupérer les missions du user connecté
+// Récupérer les missions du user connecté (IN_PROGRESS en premier)
 export async function GET(req: NextRequest) {
   try {
     const session = await auth();
@@ -51,7 +86,17 @@ export async function GET(req: NextRequest) {
     const missions = await prisma.mission.findMany({
       where: { userId: session.user.id },
       include: { trophies: true },
-      orderBy: { createdAt: "desc" },
+      orderBy: [
+        { status: "asc" }, // IN_PROGRESS avant SHIPPED/FAILED (ordre alpha)
+        { createdAt: "desc" },
+      ],
+    });
+
+    // Garantir que la mission IN_PROGRESS (si existe) est en première position
+    missions.sort((a, b) => {
+      if (a.status === "IN_PROGRESS" && b.status !== "IN_PROGRESS") return -1;
+      if (b.status === "IN_PROGRESS" && a.status !== "IN_PROGRESS") return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
     return NextResponse.json({ missions });
@@ -61,7 +106,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Mettre à jour une mission (statut + champs Récolte)
+// Mettre à jour une mission (statut + champs Récolte + pause)
 export async function PATCH(req: NextRequest) {
   try {
     const session = await auth();
@@ -70,7 +115,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { missionId, status, tagline, screenshotUrl, isPublic, url } = body;
+    const { missionId, status, tagline, screenshotUrl, isPublic, url, usePauseDay } = body;
 
     if (!missionId) {
       return NextResponse.json({ error: "missionId requis" }, { status: 400 });
@@ -79,6 +124,7 @@ export async function PATCH(req: NextRequest) {
     // Vérifier que la mission appartient à l'utilisateur connecté
     const mission = await prisma.mission.findUnique({
       where: { id: missionId },
+      include: { user: true },
     });
 
     if (!mission) {
@@ -87,6 +133,33 @@ export async function PATCH(req: NextRequest) {
 
     if (mission.userId !== session.user.id) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+    }
+
+    // ── Cas pause : consommer 1 jour de pause ──
+    if (usePauseDay === true) {
+      if (mission.status !== "IN_PROGRESS") {
+        return NextResponse.json({ error: "Pause uniquement possible sur une mission en cours" }, { status: 400 });
+      }
+      if (mission.pauseDaysUsed >= 3) {
+        return NextResponse.json({ error: "Tu as déjà utilisé tes 3 jours de pause" }, { status: 400 });
+      }
+
+      const newDeadline = new Date(mission.deadline);
+      newDeadline.setDate(newDeadline.getDate() + 1);
+
+      const updated = await prisma.mission.update({
+        where: { id: missionId },
+        data: {
+          pauseDaysUsed: mission.pauseDaysUsed + 1,
+          deadline: newDeadline,
+        },
+        include: { trophies: true },
+      });
+
+      return NextResponse.json({
+        mission: updated,
+        message: `1 jour de pause utilisé. Deadline prolongée au ${newDeadline.toLocaleDateString("fr-FR")}. Il te reste ${3 - updated.pauseDaysUsed} jour(s) de pause.`,
+      });
     }
 
     // ── Cas 1 : changement de statut (SHIPPED ou FAILED) ──
@@ -100,6 +173,12 @@ export async function PATCH(req: NextRequest) {
       if (status === "SHIPPED" && !effectiveUrl) {
         return NextResponse.json({ error: "URL du projet requise pour shipper" }, { status: 400 });
       }
+
+      // Compter les SHIPPED *avant* l'update pour EARLY_BIRD (évite race)
+      const previousShippedCount =
+        status === "SHIPPED"
+          ? await prisma.mission.count({ where: { status: "SHIPPED" } })
+          : 0;
 
       const updateData: any = { status };
       if (status === "SHIPPED") {
@@ -134,34 +213,62 @@ export async function PATCH(req: NextRequest) {
         include: { trophies: true },
       });
 
-      // Attribuer le trophée SHIPPED
+      // Attribuer le trophée SHIPPED (@@unique protège les doublons)
       if (status === "SHIPPED") {
-        const existingShipped = await prisma.trophy.findFirst({
-          where: { missionId, type: "SHIPPED" },
-        });
-        if (!existingShipped) {
+        try {
           await prisma.trophy.create({
             data: { missionId, type: "SHIPPED" },
           });
+        } catch {
+          // déjà existant grâce à @@unique
         }
 
-        // Attribuer EARLY_BIRD à la toute première mission shippée sur la plateforme
-        const shippedCount = await prisma.mission.count({
-          where: { status: "SHIPPED" },
-        });
-        if (shippedCount === 1) {
-          const existingEarlyBird = await prisma.trophy.findFirst({
-            where: { missionId, type: "EARLY_BIRD" },
-          });
-          if (!existingEarlyBird) {
+        // EARLY_BIRD uniquement si c'était la toute première
+        if (previousShippedCount === 0) {
+          try {
             await prisma.trophy.create({
               data: { missionId, type: "EARLY_BIRD" },
             });
+          } catch {
+            // déjà existant
           }
+        }
+
+        // ── notifySomeoneShipped ──
+        // Notifier les autres users qui ont activé cette préférence
+        try {
+          const interestedUsers = await prisma.user.findMany({
+            where: {
+              notifySomeoneShipped: true,
+              telegramChatId: { not: null },
+              id: { not: session.user.id }, // pas l'auteur
+            },
+            select: { telegramChatId: true, name: true },
+          });
+
+          const shipperName = mission.user?.name || "Un bâtisseur";
+          const message =
+            `🌰 <b>${shipperName}</b> a shippé <b>${mission.title}</b> !\n\n` +
+            `Un fruit de plus dans La Récolte. 🌳`;
+
+          for (const u of interestedUsers) {
+            if (u.telegramChatId) {
+              await sendTelegramMessage(u.telegramChatId, message);
+            }
+          }
+        } catch (notifyErr) {
+          console.error("notifySomeoneShipped error:", notifyErr);
+          // ne bloque pas le ship
         }
       }
 
-      return NextResponse.json({ mission: updated });
+      // Recharger avec trophées à jour
+      const final = await prisma.mission.findUnique({
+        where: { id: missionId },
+        include: { trophies: true },
+      });
+
+      return NextResponse.json({ mission: final });
     }
 
     // ── Cas 2 : mise à jour des champs (pas de changement de statut) ──
