@@ -11,17 +11,14 @@ import { sendTelegramMessage } from "@/lib/telegram";
  * On cherche l'utilisateur par telegramLinkCode, on enregistre le chat.id,
  * on vide le code, et on envoie un message de confirmation.
  *
- * Sécurité : vérifie le header X-Telegram-Bot-Api-Secret-Token contre
- * process.env.TELEGRAM_WEBHOOK_SECRET.
+ * Sécurité : fail-closed — refuse si TELEGRAM_WEBHOOK_SECRET est absent
+ * ou si le header X-Telegram-Bot-Api-Secret-Token ne correspond pas.
  */
 export async function POST(req: NextRequest) {
-  // ── Vérification du secret Telegram ──
+  // ── Vérification du secret Telegram (fail-closed) ──
   const secret = process.env.TELEGRAM_WEBHOOK_SECRET;
-  if (secret) {
-    const headerSecret = req.headers.get("x-telegram-bot-api-secret-token");
-    if (headerSecret !== secret) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-    }
+  if (!secret || req.headers.get("x-telegram-bot-api-secret-token") !== secret) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   try {
