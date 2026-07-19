@@ -27,7 +27,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
-        return { id: user.id, email: user.email, name: user.name };
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          telegramChatId: user.telegramChatId,
+        } as any;
       },
     }),
     // ──────────────────────────────────────────────────────────────────────
@@ -104,19 +109,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile, trigger }) {
       if (user) {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
+        if ((user as any).telegramChatId) {
+          token.telegramChatId = (user as any).telegramChatId;
+        }
       }
+
+      // Charger telegramChatId depuis la DB si absent (ex: après liaison Telegram)
+      if (token.id && (trigger === "update" || !token.telegramChatId)) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { telegramChatId: true, githubUsername: true, githubVerified: true },
+          });
+          if (dbUser) {
+            token.telegramChatId = dbUser.telegramChatId ?? null;
+            if (dbUser.githubUsername) token.githubUsername = dbUser.githubUsername;
+            if (dbUser.githubVerified) token.githubVerified = true;
+          }
+        } catch {
+          // silencieux
+        }
+      }
+
       if (account?.provider === "github" && profile) {
         token.githubUsername = (profile as any).login;
         token.githubVerified = true;
 
         if (token.email) {
           const dbUser = await prisma.user.findUnique({
-            where: { email: token.email },
+            where: { email: token.email as string },
           });
           if (dbUser && !dbUser.githubVerified) {
             await prisma.user.update({
@@ -143,6 +169,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.githubVerified) {
         (session.user as any).githubVerified = true;
       }
+      // telegramChatId pour que settings sache si Telegram est déjà lié
+      (session.user as any).telegramChatId = token.telegramChatId ?? null;
       return session;
     },
   },
