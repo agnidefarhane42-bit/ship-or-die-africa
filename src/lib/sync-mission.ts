@@ -3,13 +3,15 @@
 // ============================================================================
 // Ce fichier est le moteur de gamification de Ship or Die Africa.
 // Il synchronise les missions avec l'API GitHub :
-//   1. Récupère les commits du repo lié à la mission
+//   1. Récupère les commits du repo lié à la mission (uniquement depuis startedAt)
 //   2. Calcule le nombre total de commits, le streak et la date du dernier commit
 //   3. Construit l'historique commitsByDay pour la heatmap
-//   4. Attribue les trophées correspondants (sans doublon)
+//   4. Attribue les trophées correspondants (sans doublon grâce à @@unique)
 //   5. Marque la mission FAILED si la deadline est dépassée
 //
-// Appelé par le cron /api/cron/sync-missions (toutes les heures).
+// Appelé par le cron /api/cron/sync-missions (1×/jour à 8h UTC, voir vercel.json).
+// Note timezone : les clés de jours utilisent toISOString() → UTC.
+// Pour les users WAT (UTC+1) un commit après 23h locale peut basculer au jour suivant.
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
@@ -26,8 +28,13 @@ function parseRepoUrl(repoUrl: string): { owner: string; repo: string } | null {
 
 /**
  * Récupère tous les commits d'un repo GitHub (par pages de 100).
+ * Filtre ensuite ceux >= since (mission.startedAt).
  */
-async function fetchAllCommits(owner: string, repo: string): Promise<{ date: string }[]> {
+async function fetchAllCommits(
+  owner: string,
+  repo: string,
+  since?: Date
+): Promise<{ date: string }[]> {
   const token = process.env.GITHUB_ACCESS_TOKEN;
   const headers: HeadersInit = { Accept: "application/vnd.github+json" };
   if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -36,9 +43,12 @@ async function fetchAllCommits(owner: string, repo: string): Promise<{ date: str
   let page = 1;
   let hasMore = true;
 
+  // since ISO pour l'API GitHub (évite de tout paginer inutilement)
+  const sinceParam = since ? `&since=${since.toISOString()}` : "";
+
   while (hasMore && page <= 10) {
     const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=100&page=${page}`,
+      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=100&page=${page}${sinceParam}`,
       { headers, next: { revalidate: 0 } }
     );
 
@@ -59,28 +69,42 @@ async function fetchAllCommits(owner: string, repo: string): Promise<{ date: str
     page++;
   }
 
+  // Double filtre côté code pour être sûr (API since est inclusive)
+  if (since) {
+    const sinceMs = since.getTime();
+    return allCommits.filter((c) => new Date(c.date).getTime() >= sinceMs);
+  }
+
   return allCommits;
 }
 
 /**
- * Calcule le streak de jours consécutifs avec au moins un commit,
- * en remontant à partir du dernier commit.
+ * Calcule le streak de jours consécutifs avec au moins un commit.
+ * Si le dernier jour de commit n'est ni aujourd'hui ni hier (UTC), retourne 0.
  */
 function calculateStreak(commitDates: string[]): number {
   if (commitDates.length === 0) return 0;
 
   // Extraire les jours uniques (YYYY-MM-DD) et trier du plus récent au plus ancien
-  const days = new Set(
-    commitDates.map((d) => d.substring(0, 10))
-  );
+  const days = new Set(commitDates.map((d) => d.substring(0, 10)));
   const sortedDays = Array.from(days).sort((a, b) => b.localeCompare(a));
 
+  const lastDay = sortedDays[0];
+  const today = new Date().toISOString().substring(0, 10);
+  const yesterdayDate = new Date();
+  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
+  const yesterday = yesterdayDate.toISOString().substring(0, 10);
+
+  // Streak courant uniquement si le dernier commit est aujourd'hui ou hier
+  if (lastDay !== today && lastDay !== yesterday) {
+    return 0;
+  }
+
   let streak = 0;
-  let expected = new Date(sortedDays[0]);
+  let expected = new Date(sortedDays[0] + "T00:00:00.000Z");
 
   for (const day of sortedDays) {
-    const dayDate = new Date(day);
-    // Comparer les dates (sans l'heure)
+    const dayDate = new Date(day + "T00:00:00.000Z");
     const diffDays = Math.round(
       (expected.getTime() - dayDate.getTime()) / (1000 * 60 * 60 * 24)
     );
@@ -88,10 +112,7 @@ function calculateStreak(commitDates: string[]): number {
     if (diffDays === 0) {
       streak++;
       expected = new Date(dayDate);
-      expected.setDate(expected.getDate() - 1);
-    } else if (diffDays === 1) {
-      // Jour manquant → streak cassé
-      break;
+      expected.setUTCDate(expected.getUTCDate() - 1);
     } else {
       break;
     }
@@ -104,6 +125,7 @@ function calculateStreak(commitDates: string[]): number {
  * Construit un objet commitsByDay à partir des dates de commits.
  * Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
  * Ne couvre que la période de la mission (startedAt → deadline).
+ * Clés en UTC (YYYY-MM-DD).
  */
 function buildCommitsByDay(
   commitDates: string[],
@@ -121,15 +143,15 @@ function buildCommitsByDay(
 
   // Remplir tous les jours de la mission (startedAt à deadline)
   const start = new Date(startedAt);
-  start.setHours(0, 0, 0, 0);
+  start.setUTCHours(0, 0, 0, 0);
   const end = new Date(deadline);
-  end.setHours(0, 0, 0, 0);
+  end.setUTCHours(0, 0, 0, 0);
 
   const cursor = new Date(start);
   while (cursor <= end) {
     const key = cursor.toISOString().substring(0, 10);
     result[key] = counts[key] || 0;
-    cursor.setDate(cursor.getDate() + 1);
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
   return result;
@@ -137,15 +159,15 @@ function buildCommitsByDay(
 
 /**
  * Attribue un trophée à une mission s'il n'existe pas déjà.
+ * @@unique([missionId, type]) protège contre les doublons.
  */
 async function awardTrophyIfNew(missionId: string, type: string): Promise<void> {
-  const existing = await prisma.trophy.findFirst({
-    where: { missionId, type: type as any },
-  });
-  if (!existing) {
+  try {
     await prisma.trophy.create({
       data: { missionId, type: type as any },
     });
+  } catch {
+    // déjà existant (unique constraint)
   }
 }
 
@@ -164,12 +186,11 @@ export async function syncMission(missionId: string): Promise<void> {
   const repoInfo = parseRepoUrl(mission.repoUrl);
   if (!repoInfo) return;
 
-  // Récupérer les commits
-  const commits = await fetchAllCommits(repoInfo.owner, repoInfo.repo);
+  // Récupérer uniquement les commits depuis le début de la mission
+  const commits = await fetchAllCommits(repoInfo.owner, repoInfo.repo, mission.startedAt);
   const commitCount = commits.length;
-  const lastCommitAt = commits.length > 0
-    ? new Date(commits[0].date)
-    : null;
+  const lastCommitAt =
+    commits.length > 0 ? new Date(commits[0].date) : null;
   const streak = calculateStreak(commits.map((c) => c.date));
 
   // Construire commitsByDay pour la heatmap
@@ -204,7 +225,7 @@ export async function syncMission(missionId: string): Promise<void> {
     await awardTrophyIfNew(missionId, "FIRST_DEPLOY");
   }
 
-  // Vérifier la deadline
+  // Vérifier la deadline (peut avoir été prolongée par des jours de pause)
   if (new Date() > mission.deadline && mission.status === "IN_PROGRESS") {
     await prisma.mission.update({
       where: { id: missionId },
