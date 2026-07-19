@@ -5,6 +5,17 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+/** Profil GitHub minimal (login) — le type Profile de NextAuth ne l'expose pas toujours. */
+type GitHubProfile = {
+  login?: string;
+};
+
+type GitHubEmail = {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   providers: [
@@ -13,9 +24,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials: any) {
-        const email = credentials?.email as string;
-        const password = credentials?.password as string;
+      async authorize(credentials) {
+        const email =
+          typeof credentials?.email === "string" ? credentials.email : "";
+        const password =
+          typeof credentials?.password === "string" ? credentials.password : "";
 
         if (!email || !password) return null;
 
@@ -32,7 +45,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           telegramChatId: user.telegramChatId,
-        } as any;
+        };
       },
     }),
     // ──────────────────────────────────────────────────────────────────────
@@ -61,7 +74,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ user, account, profile }) {
       if (account?.provider === "github") {
-        // ── 1b. Récupérer l'email s'il est absent (email GitHub privé) ──
+        // ── Récupérer l'email s'il est absent (email GitHub privé) ──
         if (!user.email && account.access_token) {
           try {
             const res = await fetch("https://api.github.com/user/emails", {
@@ -71,10 +84,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
             if (res.ok) {
-              const emails = await res.json();
-              const primaryVerified = (emails as any[]).find(
-                (e) => e.primary && e.verified
-              );
+              const emails = (await res.json()) as GitHubEmail[];
+              const primaryVerified = emails.find((e) => e.primary && e.verified);
               if (primaryVerified?.email) {
                 user.email = primaryVerified.email;
               }
@@ -95,16 +106,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { email: user.email },
         });
 
-        if (existing) {
-          if (!existing.githubVerified) {
-            await prisma.user.update({
-              where: { id: existing.id },
-              data: {
-                githubUsername: (profile as any)?.login || existing.githubUsername,
-                githubVerified: true,
-              },
-            });
-          }
+        if (existing && !existing.githubVerified) {
+          const gh = profile as GitHubProfile | null | undefined;
+          await prisma.user.update({
+            where: { id: existing.id },
+            data: {
+              githubUsername: gh?.login || existing.githubUsername,
+              githubVerified: true,
+            },
+          });
         }
       }
       return true;
@@ -114,8 +124,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        if ((user as any).telegramChatId) {
-          token.telegramChatId = (user as any).telegramChatId;
+        if (user.telegramChatId) {
+          token.telegramChatId = user.telegramChatId;
         }
       }
 
@@ -123,8 +133,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token.id && (trigger === "update" || !token.telegramChatId)) {
         try {
           const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { telegramChatId: true, githubUsername: true, githubVerified: true },
+            where: { id: token.id },
+            select: {
+              telegramChatId: true,
+              githubUsername: true,
+              githubVerified: true,
+            },
           });
           if (dbUser) {
             token.telegramChatId = dbUser.telegramChatId ?? null;
@@ -137,18 +151,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
 
       if (account?.provider === "github" && profile) {
-        token.githubUsername = (profile as any).login;
+        const gh = profile as GitHubProfile;
+        token.githubUsername = gh.login;
         token.githubVerified = true;
 
         if (token.email) {
           const dbUser = await prisma.user.findUnique({
-            where: { email: token.email as string },
+            where: { email: token.email },
           });
           if (dbUser && !dbUser.githubVerified) {
             await prisma.user.update({
               where: { id: dbUser.id },
               data: {
-                githubUsername: (profile as any).login,
+                githubUsername: gh.login,
                 githubVerified: true,
               },
             });
@@ -159,18 +174,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as any).id = token.id as string;
+        session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
+        session.user.githubUsername = token.githubUsername ?? null;
+        session.user.githubVerified = token.githubVerified ?? false;
+        session.user.telegramChatId = token.telegramChatId ?? null;
       }
-      if (token.githubUsername) {
-        (session.user as any).githubUsername = token.githubUsername;
-      }
-      if (token.githubVerified) {
-        (session.user as any).githubVerified = true;
-      }
-      // telegramChatId pour que settings sache si Telegram est déjà lié
-      (session.user as any).telegramChatId = token.telegramChatId ?? null;
       return session;
     },
   },
