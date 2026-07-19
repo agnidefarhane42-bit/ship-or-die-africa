@@ -27,12 +27,11 @@ export default function TropheesPage() {
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
-    const userId = (session.user as any).id;
-    if (!userId) return;
 
     (async () => {
       try {
-        const res = await fetch(`/api/missions?userId=${userId}`);
+        // Le backend utilise déjà session.user.id — pas besoin de ?userId=
+        const res = await fetch("/api/missions");
         const data = await res.json();
         const trophies: Trophy[] = data.missions?.[0]?.trophies || [];
         setUnlockedTypes(trophies.map((t) => t.type));
