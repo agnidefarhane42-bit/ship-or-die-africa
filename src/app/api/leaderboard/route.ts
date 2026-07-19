@@ -8,6 +8,7 @@ export async function GET() {
       include: {
         missions: {
           include: { trophies: true },
+          orderBy: [{ status: "asc" }, { createdAt: "desc" }],
         },
         payments: { where: { status: "PAID" } },
       },
@@ -15,8 +16,11 @@ export async function GET() {
 
     const builders = users
       .map((u) => {
-        const mission = u.missions[0];
+        // Priorité : mission IN_PROGRESS, sinon la plus récente
+        const mission =
+          u.missions.find((m) => m.status === "IN_PROGRESS") || u.missions[0];
         if (!mission) return null;
+
         const day = Math.floor(
           (Date.now() - mission.startedAt.getTime()) / (1000 * 60 * 60 * 24)
         );
