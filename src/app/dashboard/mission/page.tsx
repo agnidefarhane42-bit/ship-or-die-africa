@@ -1,6 +1,7 @@
 "use client";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type Mission = {
   id: string;
@@ -12,6 +13,9 @@ type Mission = {
   startedAt: string;
   deadline: string;
   shippedAt: string | null;
+  tagline: string | null;
+  screenshotUrl: string | null;
+  isPublic: boolean;
   trophies: { id: string; type: string }[];
 };
 
@@ -33,6 +37,13 @@ export default function MissionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Récolte form state
+  const [showRecolteForm, setShowRecolteForm] = useState(false);
+  const [tagline, setTagline] = useState("");
+  const [screenshotUrl, setScreenshotUrl] = useState("");
+  const [isPublic, setIsPublic] = useState(true);
+  const [recolteSaving, setRecolteSaving] = useState(false);
+
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
 
@@ -41,11 +52,15 @@ export default function MissionPage() {
         const res = await fetch(`/api/missions`);
         const data = await res.json();
         if (data.missions?.length > 0) {
-          setMission(data.missions[0]);
-          setTitle(data.missions[0].title);
-          setDescription(data.missions[0].description);
-          setRepoUrl(data.missions[0].repoUrl || "");
-          setUrl(data.missions[0].url || "");
+          const m = data.missions[0];
+          setMission(m);
+          setTitle(m.title);
+          setDescription(m.description);
+          setRepoUrl(m.repoUrl || "");
+          setUrl(m.url || "");
+          setTagline(m.tagline || "");
+          setScreenshotUrl(m.screenshotUrl || "");
+          setIsPublic(m.isPublic ?? true);
         }
       } catch (err) {
         console.error("Mission load error:", err);
@@ -82,7 +97,24 @@ export default function MissionPage() {
 
   const handleShip = async () => {
     if (!mission) return;
-    if (!confirm("🎉 Tu es sur le point de marquer ta mission comme shippée ! Es-tu sûr ?")) return;
+
+    // Ouvrir le formulaire Récolte au lieu de confirmer directement
+    setShowRecolteForm(true);
+    setTagline(mission.tagline || "");
+    setScreenshotUrl(mission.screenshotUrl || "");
+    setIsPublic(mission.isPublic ?? true);
+  };
+
+  const handleShipSubmit = async () => {
+    if (!mission) return;
+    if (!tagline.trim()) {
+      setActionError("La tagline est obligatoire");
+      return;
+    }
+    if (tagline.length > 100) {
+      setActionError("Tagline trop longue (max 100 caractères)");
+      return;
+    }
 
     setShipping(true);
     setActionError("");
@@ -92,20 +124,68 @@ export default function MissionPage() {
       const res = await fetch("/api/missions", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ missionId: mission.id, status: "SHIPPED" }),
+        body: JSON.stringify({
+          missionId: mission.id,
+          status: "SHIPPED",
+          tagline: tagline.trim(),
+          screenshotUrl: screenshotUrl || null,
+          isPublic,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setActionError(data.error || "Erreur lors du ship");
       } else {
         setMission(data.mission);
-        setActionSuccess("🎉 Mission shippée ! Tu as récolté ton fruit 🌰");
+        setShowRecolteForm(false);
+        setActionSuccess("🎉 Mission shippée ! Ton fruit est sur La Récolte 🌰");
         setTimeout(() => setActionSuccess(""), 5000);
       }
     } catch {
       setActionError("Erreur réseau");
     } finally {
       setShipping(false);
+    }
+  };
+
+  const handleRecolteUpdate = async () => {
+    if (!mission) return;
+    if (!tagline.trim()) {
+      setActionError("La tagline est obligatoire");
+      return;
+    }
+    if (tagline.length > 100) {
+      setActionError("Tagline trop longue (max 100 caractères)");
+      return;
+    }
+
+    setRecolteSaving(true);
+    setActionError("");
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          missionId: mission.id,
+          tagline: tagline.trim(),
+          screenshotUrl: screenshotUrl || null,
+          isPublic,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Erreur");
+      } else {
+        setMission(data.mission);
+        setShowRecolteForm(false);
+        setActionSuccess("✅ Fiche Récolte mise à jour !");
+        setTimeout(() => setActionSuccess(""), 4000);
+      }
+    } catch {
+      setActionError("Erreur réseau");
+    } finally {
+      setRecolteSaving(false);
     }
   };
 
@@ -172,6 +252,8 @@ export default function MissionPage() {
 
   const progress = Math.min(100, Math.round((day / 30) * 100));
   const canShip = mission.status === "IN_PROGRESS" && !!mission.url;
+  const isShipped = mission.status === "SHIPPED";
+  const needsRecolteCompletion = isShipped && !mission.tagline;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -219,7 +301,7 @@ export default function MissionPage() {
           </div>
           <div className="flex justify-between border-b border-base-content/10 pb-2">
             <span className="text-base-content/50 text-sm">Statut</span>
-            <span className={`badge ${mission.status === "SHIPPED" ? "badge-success" : mission.status === "FAILED" ? "badge-error" : "badge-warning"}`}>{mission.status}</span>
+            <span className={`badge ${isShipped ? "badge-success" : mission.status === "FAILED" ? "badge-error" : "badge-warning"}`}>{mission.status}</span>
           </div>
           {mission.shippedAt && (
             <div className="flex justify-between border-b border-base-content/10 pb-2">
@@ -234,8 +316,101 @@ export default function MissionPage() {
         </div>
       </div>
 
+      {/* Lien vers la fiche publique si shippé et public */}
+      {isShipped && mission.isPublic && mission.tagline && (
+        <div className="card-glow rounded-2xl p-4 text-center">
+          <Link href={`/recolte/${mission.id}`} className="btn btn-ghost btn-sm text-warning">
+            Voir ma fiche publique sur La Récolte →
+          </Link>
+        </div>
+      )}
+
+      {/* Formulaire Récolte (modale inline) */}
+      {showRecolteForm && (
+        <div className="card-glow rounded-2xl p-6 space-y-4 border-2 border-warning/30">
+          <div className="flex justify-between items-center">
+            <h2 className="font-bold text-lg">🌰 Fiche Récolte</h2>
+            <button onClick={() => setShowRecolteForm(false)} className="btn btn-ghost btn-sm btn-circle">✕</button>
+          </div>
+          <p className="text-sm text-base-content/50">
+            {isShipped
+              ? "Complète la fiche de ton projet pour La Récolte."
+              : "Avant de shipper, remplis la fiche de ton projet. Ça sera affiché publiquement sur La Récolte."}
+          </p>
+          <div>
+            <label className="label"><span className="label-text text-base-content/60">Tagline * (max 100 caractères)</span></label>
+            <input
+              type="text"
+              maxLength={100}
+              placeholder="Ex: Un tracker de dépenses pour vendeurs de rue"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              className="input input-bordered w-full bg-base-200"
+            />
+            <p className="text-xs text-base-content/30 mt-1">{tagline.length}/100</p>
+          </div>
+          <div>
+            <label className="label"><span className="label-text text-base-content/60">Screenshot URL (optionnel)</span></label>
+            <input
+              type="url"
+              placeholder="https://imgur.com/..."
+              value={screenshotUrl}
+              onChange={(e) => setScreenshotUrl(e.target.value)}
+              className="input input-bordered w-full bg-base-200"
+            />
+            <p className="text-xs text-base-content/30 mt-1">Lien direct vers une image hébergée ailleurs</p>
+          </div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="checkbox checkbox-warning"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+            />
+            <span className="text-sm">Afficher mon projet sur La Récolte</span>
+          </label>
+          <div className="flex gap-3">
+            {!isShipped ? (
+              <button
+                onClick={handleShipSubmit}
+                disabled={shipping}
+                className="btn btn-success flex-1"
+              >
+                {shipping ? "Ship en cours..." : "🌰 Marquer comme shippée"}
+              </button>
+            ) : (
+              <button
+                onClick={handleRecolteUpdate}
+                disabled={recolteSaving}
+                className="btn btn-warning flex-1"
+              >
+                {recolteSaving ? "Sauvegarde..." : "💾 Mettre à jour la fiche"}
+              </button>
+            )}
+            <button onClick={() => setShowRecolteForm(false)} className="btn btn-ghost">Annuler</button>
+          </div>
+        </div>
+      )}
+
+      {/* Bouton "Compléter ma fiche Récolte" si shippé sans tagline */}
+      {needsRecolteCompletion && !showRecolteForm && (
+        <div className="card-glow rounded-2xl p-6 text-center">
+          <div className="text-4xl mb-3">🌰</div>
+          <h2 className="font-bold text-lg mb-2">Ta fiche Récolte est incomplète</h2>
+          <p className="text-sm text-base-content/50 mb-4">
+            Ajoute une tagline et un screenshot pour que ton projet apparaisse красиво sur La Récolte.
+          </p>
+          <button
+            onClick={() => setShowRecolteForm(true)}
+            className="btn btn-pirate"
+          >
+            🌰 Compléter ma fiche Récolte
+          </button>
+        </div>
+      )}
+
       {/* Ship button */}
-      {canShip && (
+      {canShip && !showRecolteForm && (
         <div className="card-glow rounded-2xl p-6 text-center">
           <div className="text-4xl mb-3">🌰</div>
           <h2 className="font-bold text-lg mb-2">Prêt à récolter ton fruit ?</h2>
@@ -278,7 +453,7 @@ export default function MissionPage() {
         {mission.status === "IN_PROGRESS" ? (
           <p className="text-xs text-base-content/40">Tu peux abandonner depuis la page Paramètres.</p>
         ) : (
-          <p className="text-xs text-base-content/40">Mission {mission.status === "SHIPPED" ? "shippée 🌰" : "abandonnée 🥀"}.</p>
+          <p className="text-xs text-base-content/40">Mission {isShipped ? "shippée 🌰" : "abandonnée 🥀"}.</p>
         )}
       </div>
     </div>
