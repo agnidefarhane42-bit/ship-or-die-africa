@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [isPublicSaving, setIsPublicSaving] = useState(false);
   const [isPublicSuccess, setIsPublicSuccess] = useState(false);
   const [notifySuccess, setNotifySuccess] = useState(false);
+  const [profileLinkCopied, setProfileLinkCopied] = useState(false);
 
   const githubConnected = session?.user?.githubVerified === true || githubVerified;
   const githubUsername = session?.user?.githubUsername || github;
@@ -220,6 +221,19 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCopyProfileLink = async () => {
+    if (!session?.user?.id) return;
+    const link = `${window.location.origin}/builders/${session.user.id}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setProfileLinkCopied(true);
+      setTimeout(() => setProfileLinkCopied(false), 2000);
+    } catch {
+      // fallback: ouvrir le lien dans un nouvel onglet
+      window.open(link, "_blank");
+    }
+  };
+
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center h-64">
@@ -305,6 +319,31 @@ export default function SettingsPage() {
         >
           {saving ? "Sauvegarde..." : "💾 Sauvegarder"}
         </button>
+
+        {/* Lien profil public */}
+        {session?.user?.id && (
+          <div className="border-t border-base-content/10 pt-4 mt-2">
+            <p className="text-sm font-bold text-base-content/60 mb-2">🔗 Mon profil public</p>
+            <p className="text-xs text-base-content/40 mb-3">
+              Partage ce lien — ta carte de visite de bâtisseur (rang, projets, feuilles).
+            </p>
+            <div className="flex gap-2 items-center">
+              <a
+                href={`/builders/${session.user.id}`}
+                target="_blank"
+                className="btn btn-ghost btn-sm"
+              >
+                👀 Voir mon profil
+              </a>
+              <button
+                onClick={handleCopyProfileLink}
+                className="btn btn-pirate btn-sm"
+              >
+                {profileLinkCopied ? "✅ Copié !" : "📋 Copier le lien"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* GitHub */}

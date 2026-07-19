@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getAvatarUrl } from "@/lib/avatar";
+import Link from "next/link";
 
 type Builder = {
   id: string;
@@ -105,7 +106,9 @@ export default function LeaderboardPage() {
                         {b.name?.[0]?.toUpperCase() || "?"}
                       </div>
                     )}
-                    <div className={`text-sm font-bold ${b.id === currentUserId ? "text-warning" : ""}`}>{b.name}</div>
+                    <Link href={`/builders/${b.id}`} className={`text-sm font-bold hover:text-warning transition-colors ${b.id === currentUserId ? "text-warning" : ""}`}>
+                      {b.name}
+                    </Link>
                     <div className="text-xs text-base-content/40 mb-2">{b.commits} commits</div>
                     <div className={`w-full ${heights[visualIdx]} rounded-t-xl ${
                       visualIdx === 0 ? "bg-warning/20 border-2 border-warning/40 border-b-0" :
@@ -150,11 +153,11 @@ export default function LeaderboardPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className={`font-bold text-sm ${b.overboard ? "text-error line-through" : ""}`}>
+                      <Link href={`/builders/${b.id}`} className={`font-bold text-sm hover:text-warning transition-colors ${b.overboard ? "text-error line-through" : ""}`}>
                         {b.name}
                         {b.id === currentUserId && <span className="text-warning ml-2">(toi)</span>}
                         {b.shipped && <span className="text-success ml-2">🌰</span>}
-                      </p>
+                      </Link>
                       <p className="text-xs text-base-content/40 truncate">{b.project}</p>
                     </div>
                     <div className="hidden sm:flex gap-4 text-xs text-base-content/40">
@@ -180,7 +183,9 @@ export default function LeaderboardPage() {
                 {overboardBuilders.map((b, i) => (
                   <div key={b.id || i} className="flex items-center gap-3">
                     <span className="text-2xl">🥀</span>
-                    <span className="text-error font-bold line-through">{b.name}</span>
+                    <Link href={`/builders/${b.id}`} className="text-error font-bold line-through hover:text-warning transition-colors">
+                      {b.name}
+                    </Link>
                     <span className="text-xs text-base-content/40">— Racines coupées le jour {b.day}</span>
                   </div>
                 ))}

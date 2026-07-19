@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     mission = await prisma.mission.findUnique({
       where: { id: missionId },
-      include: { user: { select: { name: true, githubUsername: true } } },
+      include: { user: { select: { id: true, name: true, githubUsername: true } } },
     });
   } catch {
     return { title: "La Récolte — Ship or Die Africa" };
@@ -74,6 +74,7 @@ export default async function RecolteDetailPage({ params }: Props) {
       include: {
         user: {
           select: {
+            id: true,
             name: true,
             githubUsername: true,
             githubVerified: true,
@@ -146,7 +147,10 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 pt-2 border-t border-base-content/10">
+          <Link
+            href={`/builders/${mission.user.id}`}
+            className="flex items-center gap-3 pt-2 border-t border-base-content/10 hover:text-warning transition-colors"
+          >
             {avatarSrc ? (
               <div className="w-10 h-10 rounded-full overflow-hidden flex-none">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -165,7 +169,7 @@ export default async function RecolteDetailPage({ params }: Props) {
                 <p className="text-xs text-base-content/40">@{mission.user.githubUsername}</p>
               )}
             </div>
-          </div>
+          </Link>
 
           {mission.description && (
             <div className="pt-4 border-t border-base-content/10">

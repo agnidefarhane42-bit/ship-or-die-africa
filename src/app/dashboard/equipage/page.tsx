@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getAvatarUrl } from "@/lib/avatar";
+import Link from "next/link";
 
 type Builder = {
   id: string;
@@ -112,7 +113,7 @@ export default function EquipagePage() {
                 }`}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`avatar ${m.overboard ? "opacity-40" : ""}`}>
+                  <Link href={`/builders/${m.id}`} className={`avatar ${m.overboard ? "opacity-40" : ""} hover:opacity-80 transition-opacity`}>
                     {avatarSrc ? (
                       <div className="w-12 h-12 rounded-full overflow-hidden">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -123,13 +124,13 @@ export default function EquipagePage() {
                         <span className="text-lg">{m.name?.[0]?.toUpperCase() || "?"}</span>
                       </div>
                     )}
-                  </div>
+                  </Link>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className={`font-bold ${m.overboard ? "text-error line-through" : ""}`}>
+                      <Link href={`/builders/${m.id}`} className={`font-bold hover:text-warning transition-colors ${m.overboard ? "text-error line-through" : ""}`}>
                         {m.name}
                         {m.id === currentUserId && <span className="text-warning text-xs ml-1">(toi)</span>}
-                      </h3>
+                      </Link>
                       {m.overboard && <span className="text-xl">🥀</span>}
                       {m.shipped && <span className="text-xl">🌰</span>}
                     </div>

@@ -23,6 +23,7 @@ export default async function RecoltePage({ searchParams }: Props) {
       include: {
         user: {
           select: {
+            id: true,
             name: true,
             githubUsername: true,
             githubVerified: true,
@@ -86,37 +87,40 @@ export default async function RecoltePage({ searchParams }: Props) {
                 const builderName = m.user.name || m.user.githubUsername || "Builder";
                 const avatarSrc = getAvatarUrl(m.user);
                 return (
-                  <Link
+                  <div
                     key={m.id}
-                    href={`/recolte/${m.id}`}
-                    className="card-glow rounded-2xl overflow-hidden group block"
+                    className="card-glow rounded-2xl overflow-hidden group"
                   >
-                    {m.screenshotUrl ? (
-                      <div className="aspect-video overflow-hidden">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={m.screenshotUrl}
-                          alt={m.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        />
-                      </div>
-                    ) : (
-                      <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-amber-900/30 to-emerald-900/30">
-                        <span className="text-5xl opacity-60">🌳</span>
-                      </div>
-                    )}
+                    <Link href={`/recolte/${m.id}`} className="block">
+                      {m.screenshotUrl ? (
+                        <div className="aspect-video overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={m.screenshotUrl}
+                            alt={m.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      ) : (
+                        <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-amber-900/30 to-emerald-900/30">
+                          <span className="text-5xl opacity-60">🌳</span>
+                        </div>
+                      )}
+                    </Link>
 
                     <div className="p-5 space-y-3">
-                      <h3 className="font-bold text-lg group-hover:text-warning transition-colors">
-                        {m.title}
-                      </h3>
+                      <Link href={`/recolte/${m.id}`} className="block">
+                        <h3 className="font-bold text-lg group-hover:text-warning transition-colors">
+                          {m.title}
+                        </h3>
+                      </Link>
                       {m.tagline && (
                         <p className="text-sm text-base-content/60 line-clamp-2">
                           {m.tagline}
                         </p>
                       )}
                       <div className="flex items-center justify-between text-xs text-base-content/40">
-                        <span className="flex items-center gap-2">
+                        <Link href={`/builders/${m.user.id}`} className="flex items-center gap-2 hover:text-warning transition-colors">
                           {avatarSrc ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={avatarSrc} alt="" className="w-5 h-5 rounded-full object-cover" />
@@ -126,7 +130,7 @@ export default async function RecoltePage({ searchParams }: Props) {
                             </span>
                           )}
                           {builderName}
-                        </span>
+                        </Link>
                         {m.shippedAt && (
                           <span className="badge badge-success badge-sm">
                             Shippé le {new Date(m.shippedAt).toLocaleDateString("fr-FR")}
@@ -134,7 +138,7 @@ export default async function RecoltePage({ searchParams }: Props) {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
