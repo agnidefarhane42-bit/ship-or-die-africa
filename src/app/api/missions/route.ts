@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { sendTelegramMessage } from "@/lib/telegram";
+import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 
 /** Libellés Baobab pour les trophées attribués au ship */
 const TROPHY_LABELS: Record<string, string> = {
@@ -21,10 +21,11 @@ async function notifyTrophyUnlocked(
   if (!user?.notifyTrophyUnlocked || !user.telegramChatId) return;
   try {
     const label = TROPHY_LABELS[type] || type;
+    const safeTitle = missionTitle ? escapeHtml(missionTitle) : "";
     const message =
       `🌿 <b>Nouvelle feuille débloquée !</b>\n\n` +
       `${label}\n` +
-      (missionTitle ? `<i>${missionTitle}</i>\n\n` : "\n") +
+      (safeTitle ? `<i>${safeTitle}</i>\n\n` : "\n") +
       `Continue de pousser. 🌳`;
     await sendTelegramMessage(user.telegramChatId, message);
   } catch (err) {
@@ -269,9 +270,10 @@ export async function PATCH(req: NextRequest) {
             select: { telegramChatId: true, name: true },
           });
 
-          const shipperName = mission.user?.name || "Un bâtisseur";
+          const shipperName = escapeHtml(mission.user?.name || "Un bâtisseur");
+          const safeTitle = escapeHtml(mission.title);
           const message =
-            `🌰 <b>${shipperName}</b> a shippé <b>${mission.title}</b> !\n\n` +
+            `🌰 <b>${shipperName}</b> a shippé <b>${safeTitle}</b> !\n\n` +
             `Un fruit de plus dans La Récolte. 🌳`;
 
           for (const u of interestedUsers) {
