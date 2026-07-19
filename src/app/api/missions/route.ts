@@ -3,25 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { sendTelegramMessage } from "@/lib/telegram";
 
-/**
- * Helper : retourne la mission active d'un user (IN_PROGRESS la plus récente,
- * sinon la dernière créée).
- */
-export async function getActiveMission(userId: string) {
-  const inProgress = await prisma.mission.findFirst({
-    where: { userId, status: "IN_PROGRESS" },
-    include: { trophies: true },
-    orderBy: { createdAt: "desc" },
-  });
-  if (inProgress) return inProgress;
-
-  return prisma.mission.findFirst({
-    where: { userId },
-    include: { trophies: true },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
 // Créer une mission
 export async function POST(req: NextRequest) {
   try {
@@ -86,8 +67,10 @@ export async function GET(req: NextRequest) {
     const missions = await prisma.mission.findMany({
       where: { userId: session.user.id },
       include: { trophies: true },
+      // orderBy status est un pré-tri approximatif ; le .sort() JS ci-dessous
+      // garantit IN_PROGRESS en premier, puis par createdAt desc.
       orderBy: [
-        { status: "asc" }, // IN_PROGRESS avant SHIPPED/FAILED (ordre alpha)
+        { status: "asc" },
         { createdAt: "desc" },
       ],
     });
@@ -166,6 +149,14 @@ export async function PATCH(req: NextRequest) {
     if (status !== undefined) {
       if (!["SHIPPED", "FAILED"].includes(status)) {
         return NextResponse.json({ error: "Statut non autorisé" }, { status: 400 });
+      }
+
+      // Empêcher le re-ship / re-abandon d'une mission déjà terminée
+      if (mission.status !== "IN_PROGRESS") {
+        return NextResponse.json(
+          { error: "Cette mission est déjà terminée (shippée ou abandonnée)." },
+          { status: 400 }
+        );
       }
 
       // Pour SHIPPED, exiger une URL renseignée (soit déjà sur la mission, soit passée dans la requête)
