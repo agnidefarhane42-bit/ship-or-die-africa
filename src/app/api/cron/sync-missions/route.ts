@@ -3,7 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { syncMission } from "@/lib/sync-mission";
 
 // Route cron — protégée par CRON_SECRET
-// Appelée 1×/jour à 8h UTC par Vercel Cron (voir vercel.json).
+// Appelée 1×/jour à 6h UTC par Vercel Cron (voir vercel.json).
+// Tourne avant /api/cron/notify (6h30 UTC) pour que les rappels
+// utilisent des commits/streak à jour.
 export async function GET(req: NextRequest) {
   // Vérification du secret
   const authHeader = req.headers.get("authorization");
