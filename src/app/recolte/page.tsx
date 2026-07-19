@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 const PAGE_SIZE = 24;
+export const dynamic = "force-dynamic";
 
 type Props = {
   searchParams: { page?: string };

@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import CopyLinkButton from "./CopyLinkButton";
 
+export const dynamic = "force-dynamic";
 type Props = {
   params: { missionId: string };
 };
