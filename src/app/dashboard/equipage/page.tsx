@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { getAvatarUrl } from "@/lib/avatar";
 
 type Builder = {
   id: string;
@@ -15,6 +16,8 @@ type Builder = {
   trophies: number;
   githubUsername?: string;
   githubVerified?: boolean;
+  avatarUrl?: string | null;
+  image?: string | null;
 };
 
 export default function EquipagePage() {
@@ -95,48 +98,58 @@ export default function EquipagePage() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
-          {builders.map((m, i) => (
-            <div
-              key={m.id || i}
-              className={`rounded-2xl p-5 ${
-                m.id === currentUserId
-                  ? "card-glow border border-warning/30"
-                  : m.overboard
-                  ? "shame-card"
-                  : "bg-base-content/5 border border-base-content/10"
-              }`}
-            >
-              <div className="flex items-start gap-4">
-                <div className={`avatar placeholder ${m.overboard ? "opacity-40" : ""}`}>
-                  <div className={`w-12 rounded-full ${m.id === currentUserId ? "bg-warning text-base-100" : "bg-base-content/20 text-base-content"}`}>
-                    <span className="text-lg">{m.name?.[0] || "?"}</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className={`font-bold ${m.overboard ? "text-error line-through" : ""}`}>
-                      {m.name}
-                      {m.id === currentUserId && <span className="text-warning text-xs ml-1">(toi)</span>}
-                    </h3>
-                    {m.overboard && <span className="text-xl">🥀</span>}
-                    {m.shipped && <span className="text-xl">🌰</span>}
-                  </div>
-                  <div className="flex gap-2 flex-wrap mt-2">
-                    <span className="badge badge-sm badge-ghost">{m.project}</span>
-                    {!m.overboard && (
-                      <>
-                        <span className="badge badge-sm">J{m.day}</span>
-                        {m.githubVerified && (
-                          <span className="badge badge-sm badge-success">🔥 {m.commits} commits</span>
-                        )}
-                        <span className="badge badge-sm badge-warning">🌿 {m.trophies}</span>
-                      </>
+          {builders.map((m, i) => {
+            const avatarSrc = getAvatarUrl(m);
+            return (
+              <div
+                key={m.id || i}
+                className={`rounded-2xl p-5 ${
+                  m.id === currentUserId
+                    ? "card-glow border border-warning/30"
+                    : m.overboard
+                    ? "shame-card"
+                    : "bg-base-content/5 border border-base-content/10"
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={`avatar ${m.overboard ? "opacity-40" : ""}`}>
+                    {avatarSrc ? (
+                      <div className="w-12 h-12 rounded-full overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={avatarSrc} alt={m.name} className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className={`w-12 rounded-full ${m.id === currentUserId ? "bg-warning text-base-100" : "bg-base-content/20 text-base-content"}`}>
+                        <span className="text-lg">{m.name?.[0]?.toUpperCase() || "?"}</span>
+                      </div>
                     )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className={`font-bold ${m.overboard ? "text-error line-through" : ""}`}>
+                        {m.name}
+                        {m.id === currentUserId && <span className="text-warning text-xs ml-1">(toi)</span>}
+                      </h3>
+                      {m.overboard && <span className="text-xl">🥀</span>}
+                      {m.shipped && <span className="text-xl">🌰</span>}
+                    </div>
+                    <div className="flex gap-2 flex-wrap mt-2">
+                      <span className="badge badge-sm badge-ghost">{m.project}</span>
+                      {!m.overboard && (
+                        <>
+                          <span className="badge badge-sm">J{m.day}</span>
+                          {m.githubVerified && (
+                            <span className="badge badge-sm badge-success">🔥 {m.commits} commits</span>
+                          )}
+                          <span className="badge badge-sm badge-warning">🌿 {m.trophies}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
