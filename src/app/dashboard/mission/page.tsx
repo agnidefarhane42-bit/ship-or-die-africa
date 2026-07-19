@@ -16,6 +16,7 @@ type Mission = {
   tagline: string | null;
   screenshotUrl: string | null;
   isPublic: boolean;
+  pauseDaysUsed?: number;
   trophies: { id: string; type: string }[];
 };
 
@@ -26,6 +27,7 @@ export default function MissionPage() {
   const [editing, setEditing] = useState(false);
   const [creating, setCreating] = useState(false);
   const [shipping, setShipping] = useState(false);
+  const [pausing, setPausing] = useState(false);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
 
@@ -92,6 +94,42 @@ export default function MissionPage() {
     } catch {
       setError("Erreur réseau");
       setSubmitting(false);
+    }
+  };
+
+  const handleUsePause = async () => {
+    if (!mission) return;
+    const used = mission.pauseDaysUsed ?? 0;
+    if (used >= 3) {
+      setActionError("Tu as déjà utilisé tes 3 jours de pause");
+      return;
+    }
+    if (!confirm(`Utiliser 1 jour de pause ? Il te restera ${3 - used - 1} jour(s). La deadline sera prolongée d'1 jour.`)) {
+      return;
+    }
+
+    setPausing(true);
+    setActionError("");
+    setActionSuccess("");
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ missionId: mission.id, usePauseDay: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Erreur lors de la pause");
+      } else {
+        setMission(data.mission);
+        setActionSuccess(data.message || "1 jour de pause utilisé.");
+        setTimeout(() => setActionSuccess(""), 5000);
+      }
+    } catch {
+      setActionError("Erreur réseau");
+    } finally {
+      setPausing(false);
     }
   };
 
@@ -200,6 +238,8 @@ export default function MissionPage() {
   const now = new Date();
   const day = mission ? Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1 : 0;
   const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
+  const pauseUsed = mission?.pauseDaysUsed ?? 0;
+  const pauseLeft = Math.max(0, 3 - pauseUsed);
 
   // Si pas de mission → formulaire de création
   if (!mission && !creating) {
@@ -270,10 +310,21 @@ export default function MissionPage() {
       <div className="card-glow rounded-2xl p-6 text-center">
         <p className="text-base-content/50 text-sm mb-2">Deadline</p>
         <p className="text-4xl font-black text-error mb-2">{daysLeft} jours</p>
-        <p className="text-base-content/40 text-sm">{new Date(mission.deadline).toLocaleDateString("fr-FR")} · 3 jours de pause disponibles</p>
+        <p className="text-base-content/40 text-sm">
+          {new Date(mission.deadline).toLocaleDateString("fr-FR")} · {pauseLeft} jour{pauseLeft > 1 ? "s" : ""} de pause restant{pauseLeft > 1 ? "s" : ""}
+        </p>
         <div className="h-3 bg-base-content/10 rounded-full overflow-hidden mt-4 max-w-md mx-auto">
           <div className="h-full bg-gradient-to-r from-error to-warning" style={{ width: `${progress}%` }} />
         </div>
+        {mission.status === "IN_PROGRESS" && pauseLeft > 0 && (
+          <button
+            onClick={handleUsePause}
+            disabled={pausing}
+            className="btn btn-ghost btn-sm mt-4"
+          >
+            {pausing ? "..." : `⏸ Utiliser 1 jour de pause (${pauseLeft} restant${pauseLeft > 1 ? "s" : ""})`}
+          </button>
+        )}
       </div>
 
       {/* Mission details */}
@@ -398,7 +449,7 @@ export default function MissionPage() {
           <div className="text-4xl mb-3">🌰</div>
           <h2 className="font-bold text-lg mb-2">Ta fiche Récolte est incomplète</h2>
           <p className="text-sm text-base-content/50 mb-4">
-            Ajoute une tagline et un screenshot pour que ton projet apparaisse красиво sur La Récolte.
+            Ajoute une tagline et un screenshot pour que ton projet apparaisse bien sur La Récolte.
           </p>
           <button
             onClick={() => setShowRecolteForm(true)}
