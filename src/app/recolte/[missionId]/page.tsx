@@ -8,18 +8,31 @@ type Props = {
   params: { missionId: string };
 };
 
+// Valider qu'un string est un ObjectId MongoDB valide (24 hex chars)
+function isValidObjectId(id: string): boolean {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+}
+
 // generateMetadata pour SEO dynamique
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const mission = await prisma.mission.findUnique({
-    where: { id: params.missionId },
-    include: { user: { select: { name: true, githubUsername: true } } },
-  });
+  if (!isValidObjectId(params.missionId)) {
+    return { title: "La Récolte — Ship or Die Africa" };
+  }
+
+  let mission;
+  try {
+    mission = await prisma.mission.findUnique({
+      where: { id: params.missionId },
+      include: { user: { select: { name: true, githubUsername: true } } },
+    });
+  } catch {
+    return { title: "La Récolte — Ship or Die Africa" };
+  }
 
   if (!mission || mission.status !== "SHIPPED" || !mission.isPublic) {
     return { title: "La Récolte — Ship or Die Africa" };
   }
 
-  const builderName = mission.user.name || mission.user.githubUsername || "Builder";
   const title = `${mission.tagline || mission.title} — ${mission.title} | La Récolte`;
   const description = mission.tagline || mission.description || "Un projet shippé en 30 jours par un bâtisseur du Cercle";
 
@@ -45,13 +58,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RecolteDetailPage({ params }: Props) {
-  const mission = await prisma.mission.findUnique({
-    where: { id: params.missionId },
-    include: {
-      user: { select: { name: true, githubUsername: true } },
-      trophies: true,
-    },
-  });
+  if (!isValidObjectId(params.missionId)) {
+    notFound();
+  }
+
+  let mission;
+  try {
+    mission = await prisma.mission.findUnique({
+      where: { id: params.missionId },
+      include: {
+        user: { select: { name: true, githubUsername: true } },
+        trophies: true,
+      },
+    });
+  } catch {
+    notFound();
+  }
 
   if (!mission || mission.status !== "SHIPPED" || !mission.isPublic) {
     notFound();
