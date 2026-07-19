@@ -70,6 +70,11 @@ model Mission {
   deadline    DateTime
   shippedAt   DateTime?
 
+  // ---- La Récolte (page publique des projets shippés) ----
+  tagline       String?  // Pitch en une phrase du projet
+  screenshotUrl String?  // URL d'une capture d'écran du projet
+  isPublic      Boolean  @default(true)  // Visible sur /recolte ou non
+
   // ---- Gamification (mis à jour par sync-mission.ts) ----
   commitCount  Int      @default(0)
   currentStreak Int     @default(0)
