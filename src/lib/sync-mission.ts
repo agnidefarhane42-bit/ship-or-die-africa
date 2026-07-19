@@ -15,7 +15,7 @@
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
-import { sendTelegramMessage } from "@/lib/telegram";
+import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 
 /** Libellés Baobab pour chaque TrophyType (affichage / notifications) */
 const TROPHY_LABELS: Record<string, string> = {
@@ -198,10 +198,11 @@ async function awardTrophyIfNew(missionId: string, type: string): Promise<void> 
       const user = mission?.user;
       if (user?.notifyTrophyUnlocked && user.telegramChatId) {
         const label = TROPHY_LABELS[type] || type;
+        const safeTitle = mission?.title ? escapeHtml(mission.title) : "";
         const message =
           `🌿 <b>Nouvelle feuille débloquée !</b>\n\n` +
           `${label}\n` +
-          (mission?.title ? `<i>${mission.title}</i>\n\n` : "\n") +
+          (safeTitle ? `<i>${safeTitle}</i>\n\n` : "\n") +
           `Continue de pousser. 🌳`;
 
         await sendTelegramMessage(user.telegramChatId, message);
