@@ -4,8 +4,7 @@ import { auth } from "@/lib/auth";
 
 /**
  * GET /api/auth/update-profile
- * Retourne le profil de l'utilisateur connecté (name, bio, github, préférences, telegram).
- * Remplace le hack PATCH avec body vide côté settings.
+ * Retourne le profil de l'utilisateur connecté (name, bio, github, préférences, telegram, avatar).
  */
 export async function GET() {
   try {
@@ -21,6 +20,8 @@ export async function GET() {
         name: true,
         email: true,
         bio: true,
+        image: true,
+        avatarUrl: true,
         githubUsername: true,
         githubVerified: true,
         telegramChatId: true,
@@ -77,6 +78,8 @@ export async function PATCH(req: NextRequest) {
       id: updated.id,
       name: updated.name,
       bio: updated.bio,
+      image: updated.image,
+      avatarUrl: updated.avatarUrl,
       githubUsername: updated.githubUsername,
       notifyDailyReminder: updated.notifyDailyReminder,
       notifyDeadlineAlert: updated.notifyDeadlineAlert,
