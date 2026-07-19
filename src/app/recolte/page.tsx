@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
+import { getAvatarUrl } from "@/lib/avatar";
 
 const PAGE_SIZE = 24;
 export const dynamic = "force-dynamic";
@@ -21,7 +22,13 @@ export default async function RecoltePage({ searchParams }: Props) {
       },
       include: {
         user: {
-          select: { name: true, githubUsername: true },
+          select: {
+            name: true,
+            githubUsername: true,
+            githubVerified: true,
+            avatarUrl: true,
+            image: true,
+          },
         },
       },
       orderBy: { shippedAt: "desc" },
@@ -75,60 +82,67 @@ export default async function RecoltePage({ searchParams }: Props) {
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {missions.map((m) => (
-                <Link
-                  key={m.id}
-                  href={`/recolte/${m.id}`}
-                  className="card-glow rounded-2xl overflow-hidden group block"
-                >
-                  {/* Screenshot ou placeholder */}
-                  {m.screenshotUrl ? (
-                    <div className="aspect-video overflow-hidden">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={m.screenshotUrl}
-                        alt={m.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-amber-900/30 to-emerald-900/30">
-                      <span className="text-5xl opacity-60">🌳</span>
-                    </div>
-                  )}
-
-                  <div className="p-5 space-y-3">
-                    <h3 className="font-bold text-lg group-hover:text-warning transition-colors">
-                      {m.title}
-                    </h3>
-                    {m.tagline && (
-                      <p className="text-sm text-base-content/60 line-clamp-2">
-                        {m.tagline}
-                      </p>
+              {missions.map((m) => {
+                const builderName = m.user.name || m.user.githubUsername || "Builder";
+                const avatarSrc = getAvatarUrl(m.user);
+                return (
+                  <Link
+                    key={m.id}
+                    href={`/recolte/${m.id}`}
+                    className="card-glow rounded-2xl overflow-hidden group block"
+                  >
+                    {m.screenshotUrl ? (
+                      <div className="aspect-video overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={m.screenshotUrl}
+                          alt={m.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-video flex items-center justify-center bg-gradient-to-br from-amber-900/30 to-emerald-900/30">
+                        <span className="text-5xl opacity-60">🌳</span>
+                      </div>
                     )}
-                    <div className="flex items-center justify-between text-xs text-base-content/40">
-                      <span>
-                        {m.user.name || m.user.githubUsername || "Builder"}
-                      </span>
-                      {m.shippedAt && (
-                        <span className="badge badge-success badge-sm">
-                          Shippé le {new Date(m.shippedAt).toLocaleDateString("fr-FR")}
-                        </span>
+
+                    <div className="p-5 space-y-3">
+                      <h3 className="font-bold text-lg group-hover:text-warning transition-colors">
+                        {m.title}
+                      </h3>
+                      {m.tagline && (
+                        <p className="text-sm text-base-content/60 line-clamp-2">
+                          {m.tagline}
+                        </p>
                       )}
+                      <div className="flex items-center justify-between text-xs text-base-content/40">
+                        <span className="flex items-center gap-2">
+                          {avatarSrc ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={avatarSrc} alt="" className="w-5 h-5 rounded-full object-cover" />
+                          ) : (
+                            <span className="w-5 h-5 rounded-full bg-base-content/20 flex items-center justify-center text-[10px] font-bold">
+                              {builderName.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          {builderName}
+                        </span>
+                        {m.shippedAt && (
+                          <span className="badge badge-success badge-sm">
+                            Shippé le {new Date(m.shippedAt).toLocaleDateString("fr-FR")}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12">
                 {page > 1 && (
-                  <Link
-                    href={`/recolte?page=${page - 1}`}
-                    className="btn btn-ghost btn-sm"
-                  >
+                  <Link href={`/recolte?page=${page - 1}`} className="btn btn-ghost btn-sm">
                     ← Précédent
                   </Link>
                 )}
@@ -136,10 +150,7 @@ export default async function RecoltePage({ searchParams }: Props) {
                   Page {page} / {totalPages}
                 </span>
                 {page < totalPages && (
-                  <Link
-                    href={`/recolte?page=${page + 1}`}
-                    className="btn btn-ghost btn-sm"
-                  >
+                  <Link href={`/recolte?page=${page + 1}`} className="btn btn-ghost btn-sm">
                     Suivant →
                   </Link>
                 )}
@@ -149,7 +160,6 @@ export default async function RecoltePage({ searchParams }: Props) {
         )}
       </section>
 
-      {/* FOOTER */}
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-20">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
