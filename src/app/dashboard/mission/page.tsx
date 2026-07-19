@@ -17,6 +17,8 @@ type Mission = {
   screenshotUrl: string | null;
   isPublic: boolean;
   pauseDaysUsed?: number;
+  commitCount?: number;
+  currentStreak?: number;
   trophies: { id: string; type: string }[];
 };
 
@@ -240,6 +242,101 @@ export default function MissionPage() {
   const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
   const pauseUsed = mission?.pauseDaysUsed ?? 0;
   const pauseLeft = Math.max(0, 3 - pauseUsed);
+
+  // ── Mission SHIPPED : résumé + relance ──
+  if (mission && mission.status === "SHIPPED" && !creating) {
+    const shippedDate = mission.shippedAt ? new Date(mission.shippedAt) : null;
+    const startDate = new Date(mission.startedAt);
+    const shipDays = shippedDate
+      ? Math.max(1, Math.ceil((shippedDate.getTime() - startDate.getTime()) / 86400000))
+      : 0;
+    const trophyCount = mission.trophies?.length || 0;
+    const commits = mission.commitCount ?? 0;
+
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <h1 className="text-2xl sm:text-3xl font-black">🎯 Ma Mission</h1>
+
+        <div className="card-glow rounded-2xl p-8 text-center border border-success/30">
+          <div className="text-5xl mb-4">🌰</div>
+          <h2 className="text-2xl font-black mb-2">Mission accomplie !</h2>
+          <p className="text-base-content/60 text-sm mb-6">
+            <b>{mission.title}</b> a été shippé en {shipDays} jour{shipDays > 1 ? "s" : ""}.
+          </p>
+
+          {/* Résumé */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="card-glow rounded-2xl p-4">
+              <p className="text-2xl font-black gold-text">{shipDays}</p>
+              <p className="text-xs text-base-content/40 mt-1">jours pour shipper</p>
+            </div>
+            <div className="card-glow rounded-2xl p-4">
+              <p className="text-2xl font-black gold-text">{commits}</p>
+              <p className="text-xs text-base-content/40 mt-1">commits</p>
+            </div>
+            <div className="card-glow rounded-2xl p-4">
+              <p className="text-2xl font-black gold-text">{trophyCount}/6</p>
+              <p className="text-xs text-base-content/40 mt-1">feuilles</p>
+            </div>
+          </div>
+
+          {mission.tagline && (
+            <p className="text-base-content/50 text-sm italic mb-4">"{mission.tagline}"</p>
+          )}
+
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => {
+                setTitle("");
+                setDescription("");
+                setRepoUrl("");
+                setUrl("");
+                setError("");
+                setCreating(true);
+              }}
+              className="btn btn-pirate"
+            >
+              🌱 Lancer ma prochaine mission
+            </button>
+            {mission.url && (
+              <a href={mission.url} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                🔗 Voir le projet live
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Mission FAILED : message + relance ──
+  if (mission && mission.status === "FAILED" && !creating) {
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <h1 className="text-2xl sm:text-3xl font-black">🎯 Ma Mission</h1>
+        <div className="card-glow rounded-2xl p-8 text-center border border-error/20">
+          <div className="text-5xl mb-4">🥀</div>
+          <h2 className="text-xl font-bold mb-2">Racines coupées</h2>
+          <p className="text-base-content/50 text-sm mb-6">
+            <b>{mission.title}</b> n'a pas pu être shippé dans les 30 jours. Ça arrive aux meilleurs bâtisseurs.
+          </p>
+          <button
+            onClick={() => {
+              setTitle("");
+              setDescription("");
+              setRepoUrl("");
+              setUrl("");
+              setError("");
+              setCreating(true);
+            }}
+            className="btn btn-pirate"
+          >
+            🌱 Retenter l'aventure
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Si pas de mission → formulaire de création
   if (!mission && !creating) {

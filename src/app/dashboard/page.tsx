@@ -38,6 +38,7 @@ type Builder = {
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [mission, setMission] = useState<Mission | null>(null);
+  const [allMissions, setAllMissions] = useState<Mission[]>([]);
   const [commits, setCommits] = useState<Commit[]>([]);
   const [leaderboard, setLeaderboard] = useState<Builder[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,10 @@ export default function DashboardPage() {
         const missionRes = await fetch(`/api/missions`);
         const missionData = await missionRes.json();
         if (missionData.missions?.length > 0) {
-          setMission(missionData.missions[0]);
+          setAllMissions(missionData.missions);
+          // Chercher une mission IN_PROGRESS, sinon prendre la plus récente
+          const active = missionData.missions.find((m: Mission) => m.status === "IN_PROGRESS");
+          setMission(active || missionData.missions[0]);
         }
 
         // Charger les commits GitHub si l'utilisateur a un repo (pour la liste détaillée uniquement)
@@ -94,6 +98,7 @@ export default function DashboardPage() {
   const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
   const progress = mission ? Math.min(100, Math.round((day / 30) * 100)) : 0;
   const trophyCount = mission?.trophies?.length || 0;
+  const shippedCount = allMissions.filter((m) => m.status === "SHIPPED").length;
   // Utiliser le vrai total synchronisé (pas seulement les commits récents de l'API)
   const commitCount = mission?.commitCount ?? 0;
 
@@ -143,12 +148,22 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {!mission ? (
+      {(!mission || mission.status !== "IN_PROGRESS") ? (
         <div className="card-glow rounded-2xl p-8 text-center">
-          <div className="text-4xl mb-4">🎯</div>
-          <h2 className="text-xl font-bold mb-2">Aucune mission active</h2>
-          <p className="text-base-content/50 text-sm mb-4">Crée ta mission pour commencer les 30 jours.</p>
-          <a href="/dashboard/mission" className="btn btn-pirate btn-sm">Créer ma mission →</a>
+          <div className="text-4xl mb-4">{shippedCount > 0 ? "🌰" : "🎯"}</div>
+          <h2 className="text-xl font-bold mb-2">
+            {shippedCount > 0
+              ? `Prêt pour ta ${shippedCount + 1}e mission ?`
+              : "Aucune mission active"}
+          </h2>
+          <p className="text-base-content/50 text-sm mb-4">
+            {shippedCount > 0
+              ? `Tu as déjà shippé ${shippedCount} projet${shippedCount > 1 ? "s" : ""}. Continue de pousser !`
+              : "Crée ta mission pour commencer les 30 jours."}
+          </p>
+          <a href="/dashboard/mission" className="btn btn-pirate btn-sm">
+            {shippedCount > 0 ? "🌱 Lancer ma prochaine mission →" : "Créer ma mission →"}
+          </a>
         </div>
       ) : (
         <>

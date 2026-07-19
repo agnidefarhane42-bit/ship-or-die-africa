@@ -55,6 +55,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ── Empêcher la création si une mission IN_PROGRESS existe déjà ──
+    const activeMission = await prisma.mission.findFirst({
+      where: { userId: session.user.id, status: "IN_PROGRESS" },
+      select: { id: true },
+    });
+    if (activeMission) {
+      return NextResponse.json(
+        { error: "Tu as déjà une mission en cours. Termine-la (ou abandonne-la) avant d'en lancer une nouvelle." },
+        { status: 409 }
+      );
+    }
+
     const { title, description, repoUrl, url } = await req.json();
 
     if (!title) {
