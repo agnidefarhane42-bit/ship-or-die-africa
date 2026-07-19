@@ -9,12 +9,23 @@
 //   4. Attribue les trophées correspondants (sans doublon grâce à @@unique)
 //   5. Marque la mission FAILED si la deadline est dépassée
 //
-// Appelé par le cron /api/cron/sync-missions (1×/jour à 8h UTC, voir vercel.json).
+// Appelé par le cron /api/cron/sync-missions (1×/jour à 6h UTC, voir vercel.json).
 // Note timezone : les clés de jours utilisent toISOString() → UTC.
 // Pour les users WAT (UTC+1) un commit après 23h locale peut basculer au jour suivant.
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
+import { sendTelegramMessage } from "@/lib/telegram";
+
+/** Libellés Baobab pour chaque TrophyType (affichage / notifications) */
+const TROPHY_LABELS: Record<string, string> = {
+  FIRST_COMMIT: "Première Graine plantée 🌱",
+  FIRST_DEPLOY: "Première Pousse",
+  FIFTY_COMMITS: "Racines qui s'enfoncent",
+  HUNDRED_COMMITS: "Feuillage dense",
+  SHIPPED: "Fruit récolté",
+  EARLY_BIRD: "Premier au Cercle",
+};
 
 /**
  * Extrait le owner et le repo depuis une URL GitHub.
@@ -160,12 +171,45 @@ function buildCommitsByDay(
 /**
  * Attribue un trophée à une mission s'il n'existe pas déjà.
  * @@unique([missionId, type]) protège contre les doublons.
+ * En cas de création réussie, notifie l'utilisateur si notifyTrophyUnlocked + telegramChatId.
  */
 async function awardTrophyIfNew(missionId: string, type: string): Promise<void> {
   try {
     await prisma.trophy.create({
       data: { missionId, type: type as any },
     });
+
+    // Nouveau trophée réellement créé → notification « feuille débloquée »
+    try {
+      const mission = await prisma.mission.findUnique({
+        where: { id: missionId },
+        select: {
+          title: true,
+          user: {
+            select: {
+              telegramChatId: true,
+              notifyTrophyUnlocked: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      const user = mission?.user;
+      if (user?.notifyTrophyUnlocked && user.telegramChatId) {
+        const label = TROPHY_LABELS[type] || type;
+        const message =
+          `🌿 <b>Nouvelle feuille débloquée !</b>\n\n` +
+          `${label}\n` +
+          (mission?.title ? `<i>${mission.title}</i>\n\n` : "\n") +
+          `Continue de pousser. 🌳`;
+
+        await sendTelegramMessage(user.telegramChatId, message);
+      }
+    } catch (notifyErr) {
+      console.error("notifyTrophyUnlocked error:", notifyErr);
+      // ne bloque pas l'attribution du trophée
+    }
   } catch {
     // déjà existant (unique constraint)
   }
