@@ -5,8 +5,9 @@ import type { Metadata } from "next";
 import CopyLinkButton from "./CopyLinkButton";
 
 export const dynamic = "force-dynamic";
+
 type Props = {
-  params: { missionId: string };
+  params: Promise<{ missionId: string }>;
 };
 
 // Valider qu'un string est un ObjectId MongoDB valide (24 hex chars)
@@ -16,14 +17,16 @@ function isValidObjectId(id: string): boolean {
 
 // generateMetadata pour SEO dynamique
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  if (!isValidObjectId(params.missionId)) {
+  const { missionId } = await params;
+
+  if (!isValidObjectId(missionId)) {
     return { title: "La Récolte — Ship or Die Africa" };
   }
 
   let mission;
   try {
     mission = await prisma.mission.findUnique({
-      where: { id: params.missionId },
+      where: { id: missionId },
       include: { user: { select: { name: true, githubUsername: true } } },
     });
   } catch {
@@ -59,14 +62,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RecolteDetailPage({ params }: Props) {
-  if (!isValidObjectId(params.missionId)) {
+  const { missionId } = await params;
+
+  if (!isValidObjectId(missionId)) {
     notFound();
   }
 
   let mission;
   try {
     mission = await prisma.mission.findUnique({
-      where: { id: params.missionId },
+      where: { id: missionId },
       include: {
         user: { select: { name: true, githubUsername: true } },
         trophies: true,
