@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import CopyLinkButton from "./CopyLinkButton";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +11,10 @@ type Props = {
   params: Promise<{ missionId: string }>;
 };
 
-// Valider qu'un string est un ObjectId MongoDB valide (24 hex chars)
 function isValidObjectId(id: string): boolean {
   return /^[0-9a-fA-F]{24}$/.test(id);
 }
 
-// generateMetadata pour SEO dynamique
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { missionId } = await params;
 
@@ -73,7 +72,15 @@ export default async function RecolteDetailPage({ params }: Props) {
     mission = await prisma.mission.findUnique({
       where: { id: missionId },
       include: {
-        user: { select: { name: true, githubUsername: true } },
+        user: {
+          select: {
+            name: true,
+            githubUsername: true,
+            githubVerified: true,
+            avatarUrl: true,
+            image: true,
+          },
+        },
         trophies: true,
       },
     });
@@ -86,6 +93,7 @@ export default async function RecolteDetailPage({ params }: Props) {
   }
 
   const builderName = mission.user.name || mission.user.githubUsername || "Builder";
+  const avatarSrc = getAvatarUrl(mission.user);
   const shippedDate = mission.shippedAt ? new Date(mission.shippedAt) : null;
   const startDate = new Date(mission.startedAt);
   const shipDays = shippedDate
@@ -94,7 +102,6 @@ export default async function RecolteDetailPage({ params }: Props) {
 
   return (
     <main className="hero-bg min-h-screen">
-      {/* NAVBAR */}
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
         <div className="flex-1">
           <Link href="/" className="text-2xl font-black tracking-tight">
@@ -108,7 +115,6 @@ export default async function RecolteDetailPage({ params }: Props) {
         </div>
       </nav>
 
-      {/* HERO Screenshot */}
       <section className="px-4 sm:px-8 pt-8 pb-4 max-w-4xl mx-auto">
         {mission.screenshotUrl ? (
           <div className="rounded-2xl overflow-hidden card-glow">
@@ -126,7 +132,6 @@ export default async function RecolteDetailPage({ params }: Props) {
         )}
       </section>
 
-      {/* Détails */}
       <section className="px-4 sm:px-8 pb-8 max-w-4xl mx-auto space-y-6">
         <div className="card-glow rounded-2xl p-6 sm:p-8 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -141,13 +146,19 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Builder info */}
           <div className="flex items-center gap-3 pt-2 border-t border-base-content/10">
-            <div className="avatar placeholder">
-              <div className="bg-warning/30 text-warning-content rounded-full w-10">
-                <span className="text-sm font-bold">{builderName.charAt(0).toUpperCase()}</span>
+            {avatarSrc ? (
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-none">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={avatarSrc} alt={builderName} className="w-full h-full object-cover" />
               </div>
-            </div>
+            ) : (
+              <div className="avatar placeholder">
+                <div className="bg-warning/30 text-warning-content rounded-full w-10">
+                  <span className="text-sm font-bold">{builderName.charAt(0).toUpperCase()}</span>
+                </div>
+              </div>
+            )}
             <div>
               <p className="font-bold text-sm">{builderName}</p>
               {mission.user.githubUsername && (
@@ -156,7 +167,6 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Description */}
           {mission.description && (
             <div className="pt-4 border-t border-base-content/10">
               <h2 className="text-sm font-bold text-base-content/50 mb-2">Le projet</h2>
@@ -164,7 +174,6 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Stats */}
           <div className="pt-4 border-t border-base-content/10 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
             <div>
               <p className="text-2xl font-black gold-text">{mission.commitCount}</p>
@@ -184,7 +193,6 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Lien externe */}
           {mission.url && (
             <div className="pt-4 border-t border-base-content/10">
               <a
@@ -198,7 +206,6 @@ export default async function RecolteDetailPage({ params }: Props) {
             </div>
           )}
 
-          {/* Actions */}
           <div className="pt-4 border-t border-base-content/10 flex gap-3">
             <CopyLinkButton />
             <Link href="/recolte" className="btn btn-ghost btn-sm">
@@ -208,7 +215,6 @@ export default async function RecolteDetailPage({ params }: Props) {
         </div>
       </section>
 
-      {/* FOOTER */}
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-20">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
