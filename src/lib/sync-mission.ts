@@ -10,12 +10,20 @@
 //   5. Marque la mission FAILED si la deadline est dépassée
 //
 // Appelé par le cron /api/cron/sync-missions (1×/jour à 6h UTC, voir vercel.json).
-// Note timezone : les clés de jours utilisent toISOString() → UTC.
-// Pour les users WAT (UTC+1) un commit après 23h locale peut basculer au jour suivant.
+//
+// Timezone : Africa/Lagos (WAT, UTC+1, sans DST).
+// Les builders sont principalement en Afrique de l'Ouest / Centrale.
+// Bucketisation des jours (streak, commitsByDay) en jour civil Lagos,
+// PAS en UTC via toISOString() — sinon un commit à 23h30 Cotonou bascule au jour suivant.
+// Limite connue : pas encore de User.timezone ; tous les users utilisent Africa/Lagos.
+// Les DateTime startedAt / deadline restent des instants absolus (UTC) en base.
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
 import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
+
+/** Timezone produit par défaut (WAT). */
+const DEFAULT_TZ = "Africa/Lagos";
 
 /** Libellés Baobab pour chaque TrophyType (affichage / notifications) */
 const TROPHY_LABELS: Record<string, string> = {
@@ -26,6 +34,35 @@ const TROPHY_LABELS: Record<string, string> = {
   SHIPPED: "Fruit récolté",
   EARLY_BIRD: "Premier au Cercle",
 };
+
+/**
+ * Jour civil YYYY-MM-DD dans DEFAULT_TZ (Africa/Lagos).
+ * Utilise Intl — pas toISOString() (qui est toujours UTC).
+ */
+function toLocalDayKey(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  // en-CA → YYYY-MM-DD
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: DEFAULT_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+}
+
+/**
+ * Ajoute n jours civils à une clé YYYY-MM-DD (arithmétique pure sur la date).
+ * Valide pour Africa/Lagos (pas de DST).
+ */
+function addDaysToKey(dayKey: string, n: number): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const utc = Date.UTC(y, m - 1, d) + n * 86_400_000;
+  const dt = new Date(utc);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
 
 /**
  * Extrait le owner et le repo depuis une URL GitHub.
@@ -91,39 +128,30 @@ async function fetchAllCommits(
 
 /**
  * Calcule le streak de jours consécutifs avec au moins un commit.
- * Si le dernier jour de commit n'est ni aujourd'hui ni hier (UTC), retourne 0.
+ * Jours civils en Africa/Lagos.
+ * Si le dernier jour de commit n'est ni aujourd'hui ni hier (Lagos), retourne 0.
  */
 function calculateStreak(commitDates: string[]): number {
   if (commitDates.length === 0) return 0;
 
-  // Extraire les jours uniques (YYYY-MM-DD) et trier du plus récent au plus ancien
-  const days = new Set(commitDates.map((d) => d.substring(0, 10)));
+  const days = new Set(commitDates.map((d) => toLocalDayKey(d)));
   const sortedDays = Array.from(days).sort((a, b) => b.localeCompare(a));
 
-  const lastDay = sortedDays[0];
-  const today = new Date().toISOString().substring(0, 10);
-  const yesterdayDate = new Date();
-  yesterdayDate.setUTCDate(yesterdayDate.getUTCDate() - 1);
-  const yesterday = yesterdayDate.toISOString().substring(0, 10);
+  const today = toLocalDayKey(new Date());
+  const yesterday = addDaysToKey(today, -1);
 
-  // Streak courant uniquement si le dernier commit est aujourd'hui ou hier
-  if (lastDay !== today && lastDay !== yesterday) {
+  // Streak courant uniquement si le dernier commit est aujourd'hui ou hier (Lagos)
+  if (sortedDays[0] !== today && sortedDays[0] !== yesterday) {
     return 0;
   }
 
   let streak = 0;
-  let expected = new Date(sortedDays[0] + "T00:00:00.000Z");
+  let expected = sortedDays[0];
 
   for (const day of sortedDays) {
-    const dayDate = new Date(day + "T00:00:00.000Z");
-    const diffDays = Math.round(
-      (expected.getTime() - dayDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (diffDays === 0) {
+    if (day === expected) {
       streak++;
-      expected = new Date(dayDate);
-      expected.setUTCDate(expected.getUTCDate() - 1);
+      expected = addDaysToKey(expected, -1);
     } else {
       break;
     }
@@ -135,8 +163,8 @@ function calculateStreak(commitDates: string[]): number {
 /**
  * Construit un objet commitsByDay à partir des dates de commits.
  * Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
- * Ne couvre que la période de la mission (startedAt → deadline).
- * Clés en UTC (YYYY-MM-DD).
+ * Clés = jours civils Africa/Lagos.
+ * Couvre la période startedAt → deadline (bucketisés en jour local).
  */
 function buildCommitsByDay(
   commitDates: string[],
@@ -145,24 +173,23 @@ function buildCommitsByDay(
 ): Record<string, number> {
   const result: Record<string, number> = {};
 
-  // Compter les commits par jour
+  // Compter les commits par jour civil Lagos
   const counts: Record<string, number> = {};
   for (const d of commitDates) {
-    const day = d.substring(0, 10);
+    const day = toLocalDayKey(d);
     counts[day] = (counts[day] || 0) + 1;
   }
 
-  // Remplir tous les jours de la mission (startedAt à deadline)
-  const start = new Date(startedAt);
-  start.setUTCHours(0, 0, 0, 0);
-  const end = new Date(deadline);
-  end.setUTCHours(0, 0, 0, 0);
+  const startKey = toLocalDayKey(startedAt);
+  const endKey = toLocalDayKey(deadline);
 
-  const cursor = new Date(start);
-  while (cursor <= end) {
-    const key = cursor.toISOString().substring(0, 10);
-    result[key] = counts[key] || 0;
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  let cursor = startKey;
+  // Garde-fou : max ~400 jours pour éviter une boucle infinie si données absurdes
+  let guard = 0;
+  while (cursor <= endKey && guard < 400) {
+    result[cursor] = counts[cursor] || 0;
+    cursor = addDaysToKey(cursor, 1);
+    guard++;
   }
 
   return result;
@@ -238,7 +265,7 @@ export async function syncMission(missionId: string): Promise<void> {
     commits.length > 0 ? new Date(commits[0].date) : null;
   const streak = calculateStreak(commits.map((c) => c.date));
 
-  // Construire commitsByDay pour la heatmap
+  // Construire commitsByDay pour la heatmap (jours Africa/Lagos)
   const commitsByDay = buildCommitsByDay(
     commits.map((c) => c.date),
     mission.startedAt,
@@ -270,7 +297,7 @@ export async function syncMission(missionId: string): Promise<void> {
     await awardTrophyIfNew(missionId, "FIRST_DEPLOY");
   }
 
-  // Vérifier la deadline (peut avoir été prolongée par des jours de pause)
+  // Vérifier la deadline (instant absolu — inchangé)
   if (new Date() > mission.deadline && mission.status === "IN_PROGRESS") {
     await prisma.mission.update({
       where: { id: missionId },
