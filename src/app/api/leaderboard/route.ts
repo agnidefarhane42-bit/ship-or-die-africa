@@ -3,14 +3,27 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
+    // Select explicite — ne charge jamais password/email/telegramChatId
     const users = await prisma.user.findMany({
       where: { role: "USER" },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        githubUsername: true,
+        githubVerified: true,
+        avatarUrl: true,
+        image: true,
         missions: {
-          include: { trophies: true },
+          select: {
+            status: true,
+            title: true,
+            startedAt: true,
+            commitCount: true,
+            currentStreak: true,
+            trophies: { select: { id: true, type: true } },
+          },
           orderBy: [{ status: "asc" }, { createdAt: "desc" }],
         },
-        payments: { where: { status: "PAID" } },
       },
     });
 
