@@ -11,6 +11,7 @@ type Mission = {
   status: string;
   startedAt: string;
   deadline: string;
+  commitCount?: number;
   commitsByDay?: Record<string, number> | null;
   trophies: { id: string; type: string }[];
 };
@@ -46,14 +47,14 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        // Charger la mission de l'utilisateur
+        // Charger la mission de l'utilisateur (IN_PROGRESS en premier grâce au backend)
         const missionRes = await fetch(`/api/missions`);
         const missionData = await missionRes.json();
         if (missionData.missions?.length > 0) {
           setMission(missionData.missions[0]);
         }
 
-        // Charger les commits GitHub si l'utilisateur a un repo
+        // Charger les commits GitHub si l'utilisateur a un repo (pour la liste détaillée uniquement)
         if (missionData.missions?.[0]?.repoUrl) {
           const repoMatch = missionData.missions[0].repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
           if (repoMatch) {
@@ -93,7 +94,8 @@ export default function DashboardPage() {
   const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
   const progress = mission ? Math.min(100, Math.round((day / 30) * 100)) : 0;
   const trophyCount = mission?.trophies?.length || 0;
-  const commitCount = commits.length;
+  // Utiliser le vrai total synchronisé (pas seulement les commits récents de l'API)
+  const commitCount = mission?.commitCount ?? 0;
 
   // Heatmap basée sur commitsByDay (vraies données) ou toute grise si absent
   const heatColors = ["bg-base-content/5", "bg-success/20", "bg-success/40", "bg-success/60", "bg-success"];
@@ -160,7 +162,7 @@ export default function DashboardPage() {
             <div className="card-glow rounded-2xl p-5">
               <div className="text-3xl mb-2">💻</div>
               <p className="text-2xl font-black gold-text">{commitCount}</p>
-              <p className="text-xs text-base-content/40">commits récents</p>
+              <p className="text-xs text-base-content/40">commits</p>
             </div>
             <div className="card-glow rounded-2xl p-5">
               <div className="text-3xl mb-2">🌿</div>
