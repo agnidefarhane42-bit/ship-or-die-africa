@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendWelcomeEmail } from "@/lib/resend";
+import { sendTelegramMessage } from "@/lib/telegram";
 import crypto from "crypto";
 
 /**
+ * Webhook FedaPay — confirmation de paiement.
+ *
+ * Signature : HMAC-SHA256 (hex) du body brut, header X-FEDAPAY-SIGNATURE
+ * (variantes de casse acceptées). Fail-closed si FEDAPAY_WEBHOOK_SECRET absent.
+ *
+ * Doc FedaPay webhooks :
+ * https://docs.fedapay.com/integration-api/v1/webhooks
+ */
+
+/**
  * Vérifie la signature du webhook FedaPay.
- * Le header X-FEDAPAY-SIGNATURE contient un HMAC-SHA256 du body raw,
+ * Le header contient un HMAC-SHA256 hex du body raw,
  * calculé avec FEDAPAY_WEBHOOK_SECRET.
  */
 function verifySignature(rawBody: string, signatureHeader: string | null): boolean {
@@ -12,7 +24,7 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
 
   const secret = process.env.FEDAPAY_WEBHOOK_SECRET;
   if (!secret) {
-    console.error("FEDAPAY_WEBHOOK_SECRET non configuré");
+    console.error("FEDAPAY_WEBHOOK_SECRET non configuré — webhook refusé (fail-closed)");
     return false;
   }
 
@@ -31,13 +43,23 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
   }
 }
 
+function getFedaPaySignature(req: NextRequest): string | null {
+  // Accepte les variantes de casse / noms documentés sans inventer un format Stripe
+  return (
+    req.headers.get("x-fedapay-signature") ||
+    req.headers.get("X-FEDAPAY-SIGNATURE") ||
+    req.headers.get("x-fedapay-signature".toUpperCase()) ||
+    null
+  );
+}
+
 export async function POST(req: NextRequest) {
   try {
-    // 1. Récupérer le body brut (pas req.json() qui consomme le stream)
+    // 1. Body brut (pas req.json() qui consomme le stream)
     const rawBody = await req.text();
 
-    // 2. Vérifier la signature
-    const signature = req.headers.get("X-FEDAPAY-SIGNATURE");
+    // 2. Signature — fail-closed si secret absent ou HMAC invalide
+    const signature = getFedaPaySignature(req);
     if (!verifySignature(rawBody, signature)) {
       return NextResponse.json({ error: "Signature invalide" }, { status: 401 });
     }
@@ -89,6 +111,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true, status: "pending" });
     }
 
+    // Était-il déjà PAID ? (évite email/Telegram en double sur retry webhook)
+    const existing = await prisma.payment.findUnique({
+      where: { fedapayId },
+      select: { status: true },
+    });
+    const wasAlreadyPaid = existing?.status === "PAID";
+
     // Paiement confirmé
     await prisma.payment.upsert({
       where: { fedapayId },
@@ -104,6 +133,37 @@ export async function POST(req: NextRequest) {
         paidAt: new Date(),
       },
     });
+
+    // Notifications post-paiement uniquement sur transition → PAID
+    if (!wasAlreadyPaid) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true, name: true, telegramChatId: true },
+        });
+
+        if (user?.email) {
+          try {
+            await sendWelcomeEmail(user.email, user.name || undefined);
+          } catch (emailErr) {
+            console.error("Welcome email after FedaPay paid failed:", emailErr);
+          }
+        }
+
+        if (user?.telegramChatId) {
+          try {
+            await sendTelegramMessage(
+              user.telegramChatId,
+              "🌳 <b>Paiement confirmé !</b>\n\nBienvenue sous le baobab. Tu peux maintenant créer ta mission de 30 jours."
+            );
+          } catch (tgErr) {
+            console.error("Welcome Telegram after FedaPay paid failed:", tgErr);
+          }
+        }
+      } catch (notifyErr) {
+        console.error("Post-paid notifications error:", notifyErr);
+      }
+    }
 
     return NextResponse.json({ received: true, status: "paid" });
   } catch (err) {
