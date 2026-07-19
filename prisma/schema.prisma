@@ -70,6 +70,10 @@ model Mission {
   deadline    DateTime
   shippedAt   DateTime?
 
+  // ---- Jours de pause (max 3) ----
+  // Chaque pause consomme 1 jour et prolonge la deadline d'1 jour
+  pauseDaysUsed Int @default(0)
+
   // ---- La Récolte (page publique des projets shippés) ----
   tagline       String?  // Pitch en une phrase du projet
   screenshotUrl String?  // URL d'une capture d'écran du projet
@@ -83,6 +87,7 @@ model Mission {
   // ---- Historique des commits par jour ----
   // Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
   // Construit à partir des dates de commits lors de la synchronisation
+  // Clés en UTC (YYYY-MM-DD). Note: pour les users WAT (UTC+1) un commit tardif peut basculer au jour suivant.
   commitsByDay  Json?
 
   // ---- Alertes de deadline déjà envoyées (pour éviter les doublons) ----
@@ -109,6 +114,8 @@ model Trophy {
 
   type        TrophyType
   awardedAt   DateTime @default(now())
+
+  @@unique([missionId, type])
 }
 
 // TrophyType — Les valeurs restent identiques en base (ne pas renommer).
@@ -160,6 +167,8 @@ model Account {
   id_token          String?
   session_state     String?
   user              User    @relation(fields: [userId], references: [id])
+
+  @@unique([provider, providerAccountId])
 }
 
 model Session {
@@ -175,4 +184,6 @@ model VerificationToken {
   identifier String
   token      String
   expires    DateTime
+
+  @@unique([identifier, token])
 }
