@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const links = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
@@ -14,6 +15,37 @@ const links = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [pauseLeft, setPauseLeft] = useState(3);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/missions");
+        if (!res.ok) return;
+        const data = await res.json();
+        const mission = data.missions?.[0];
+        if (!mission || mission.status !== "IN_PROGRESS") {
+          setDaysLeft(null);
+          return;
+        }
+        const now = new Date();
+        const left = Math.max(
+          0,
+          Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)
+        );
+        const day = Math.floor(
+          (now.getTime() - new Date(mission.startedAt).getTime()) / 86400000
+        ) + 1;
+        setDaysLeft(left);
+        setProgress(Math.min(100, Math.round((day / 30) * 100)));
+        setPauseLeft(Math.max(0, 3 - (mission.pauseDaysUsed ?? 0)));
+      } catch {
+        // silencieux
+      }
+    })();
+  }, [pathname]);
 
   return (
     <aside className="hidden sm:flex flex-col w-64 min-h-screen border-r border-base-content/10 bg-base-200/50 backdrop-blur-xl fixed left-0 top-0 z-40">
@@ -44,11 +76,28 @@ export default function Sidebar() {
 
       <div className="p-4 border-t border-base-content/10">
         <div className="card-glow rounded-xl p-4">
-          <p className="text-xs text-base-content/40 mb-1">Days remaining</p>
-          <p className="text-2xl font-black gold-text">18 jours</p>
-          <div className="mt-2 h-2 bg-base-content/10 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-error to-warning" style={{ width: "40%" }} />
-          </div>
+          {daysLeft !== null ? (
+            <>
+              <p className="text-xs text-base-content/40 mb-1">Jours restants</p>
+              <p className="text-2xl font-black gold-text">{daysLeft} jour{daysLeft > 1 ? "s" : ""}</p>
+              <div className="mt-2 h-2 bg-base-content/10 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-error to-warning"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              {pauseLeft > 0 && (
+                <p className="text-xs text-base-content/40 mt-2">
+                  ⏸ {pauseLeft} jour{pauseLeft > 1 ? "s" : ""} de pause restant{pauseLeft > 1 ? "s" : ""}
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <p className="text-xs text-base-content/40 mb-1">Mission</p>
+              <p className="text-sm text-base-content/60">Aucune mission active</p>
+            </>
+          )}
         </div>
       </div>
     </aside>
