@@ -195,12 +195,6 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "URL du projet requise pour shipper" }, { status: 400 });
       }
 
-      // Compter les SHIPPED *avant* l'update pour EARLY_BIRD (évite race)
-      const previousShippedCount =
-        status === "SHIPPED"
-          ? await prisma.mission.count({ where: { status: "SHIPPED" } })
-          : 0;
-
       const updateData: any = { status };
       if (status === "SHIPPED") {
         updateData.shippedAt = new Date();
@@ -234,28 +228,38 @@ export async function PATCH(req: NextRequest) {
         include: { trophies: true },
       });
 
-      // Attribuer le trophée SHIPPED (@@unique protège les doublons)
+      // Attribuer le trophée SHIPPED (@@unique protège les doublons par mission)
       if (status === "SHIPPED") {
         try {
           await prisma.trophy.create({
             data: { missionId, type: "SHIPPED" },
           });
-          // Notif « feuille débloquée » pour le shipper (pas les autres)
+          // Notif uniquement si create réussi
           await notifyTrophyUnlocked(mission.user, "SHIPPED", mission.title);
         } catch {
-          // déjà existant grâce à @@unique
+          // déjà existant grâce à @@unique([missionId, type])
         }
 
-        // EARLY_BIRD uniquement si c'était la toute première
-        if (previousShippedCount === 0) {
-          try {
+        // ── EARLY_BIRD global (au plus un dans toute la base) ──
+        // Check + create défensif compatible MongoDB (pas de transaction multi-doc fiable).
+        // findFirst sur type=EARLY_BIRD (global), pas count(missions SHIPPED).
+        // Si deux ships concurrent → le second create échoue ou voit déjà un EARLY_BIRD.
+        try {
+          const existingEarlyBird = await prisma.trophy.findFirst({
+            where: { type: "EARLY_BIRD" },
+            select: { id: true },
+          });
+
+          if (!existingEarlyBird) {
             await prisma.trophy.create({
               data: { missionId, type: "EARLY_BIRD" },
             });
+            // Notif uniquement si create réussi
             await notifyTrophyUnlocked(mission.user, "EARLY_BIRD", mission.title);
-          } catch {
-            // déjà existant
           }
+        } catch {
+          // Course : un autre ship a créé EARLY_BIRD entre le findFirst et le create
+          // (ou @@unique missionId+type) — ignorer silencieusement
         }
 
         // ── notifySomeoneShipped ──
