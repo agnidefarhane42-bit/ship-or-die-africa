@@ -10,14 +10,15 @@
 /**
  * Échappe les caractères spéciaux HTML pour parse_mode: "HTML" Telegram.
  * À appliquer sur toute chaîne dynamique (title, name, etc.), pas sur les balises contrôlées.
+ * Note: replacements construits avec & pour éviter la corruption des entités en pipeline.
  */
 export function escapeHtml(s: string): string {
   return s
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, """)
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, "\u0026amp;")
+    .replace(/</g, "\u0026lt;")
+    .replace(/>/g, "\u0026gt;")
+    .replace(/"/g, "\u0026quot;")
+    .replace(/'/g, "\u0026#39;");
 }
 
 /**
