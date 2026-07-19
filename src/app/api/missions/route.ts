@@ -70,7 +70,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { missionId, status, tagline, screenshotUrl, isPublic } = body;
+    const { missionId, status, tagline, screenshotUrl, isPublic, url } = body;
 
     if (!missionId) {
       return NextResponse.json({ error: "missionId requis" }, { status: 400 });
@@ -95,14 +95,20 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Statut non autorisé" }, { status: 400 });
       }
 
-      // Pour SHIPPED, exiger une URL renseignée
-      if (status === "SHIPPED" && !mission.url) {
+      // Pour SHIPPED, exiger une URL renseignée (soit déjà sur la mission, soit passée dans la requête)
+      const effectiveUrl = url || mission.url;
+      if (status === "SHIPPED" && !effectiveUrl) {
         return NextResponse.json({ error: "URL du projet requise pour shipper" }, { status: 400 });
       }
 
       const updateData: any = { status };
       if (status === "SHIPPED") {
         updateData.shippedAt = new Date();
+
+        // Set l'URL si fournie dans le ship
+        if (url) {
+          updateData.url = url;
+        }
 
         // Accepter les champs Récolte au moment du ship
         if (tagline !== undefined) {
@@ -158,8 +164,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ mission: updated });
     }
 
-    // ── Cas 2 : mise à jour des champs Récolte uniquement (pas de changement de statut) ──
+    // ── Cas 2 : mise à jour des champs (pas de changement de statut) ──
     const updateData: any = {};
+    if (url !== undefined) {
+      updateData.url = url || null;
+    }
     if (tagline !== undefined) {
       if (tagline && tagline.length > 100) {
         return NextResponse.json({ error: "Tagline trop longue (max 100 caractères)" }, { status: 400 });
