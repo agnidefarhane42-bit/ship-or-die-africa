@@ -33,10 +33,13 @@ export default function Home() {
       {/* NAVBAR */}
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto relative z-50">
         <div className="flex-1">
-          <span className="text-lg sm:text-2xl font-black tracking-tight">
-            <span className="gold-text">🌳 Ship or Die</span>
-            <span className="text-base-content/60 text-xs sm:text-sm ml-1">Africa</span>
-          </span>
+          <a href="/" className="flex items-center gap-2">
+            <img src="/logo.png" alt="Ship or Die Africa" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+            <span className="text-lg sm:text-xl font-black tracking-tight">
+              <span className="gold-text">Ship or Die</span>
+              <span className="text-base-content/60 text-xs sm:text-sm ml-1">Africa</span>
+            </span>
+          </a>
         </div>
         {/* Desktop nav */}
         <div className="hidden sm:flex flex-none gap-2">

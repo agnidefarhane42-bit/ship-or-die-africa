@@ -34,7 +34,10 @@ export default function LoginPage() {
     <main className="hero-bg min-h-screen flex items-center justify-center px-4">
       <div className="card-glow rounded-3xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black gold-text mb-2">🌳 Ship or Die Africa</h1>
+          <div className="flex flex-col items-center gap-2 mb-2">
+            <img src="/logo.png" alt="Ship or Die Africa" className="w-16 h-16 object-contain" />
+            <h1 className="text-2xl font-black gold-text">Ship or Die Africa</h1>
+          </div>
           <p className="text-base-content/50 text-sm">Connexion à ta mission</p>
         </div>
         {error && (

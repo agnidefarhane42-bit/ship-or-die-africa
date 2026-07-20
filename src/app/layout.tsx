@@ -5,10 +5,16 @@ import { SessionProviderWrapper } from "@/components/SessionProvider";
 export const metadata: Metadata = {
   title: "Ship or Die Africa — Ship ton projet en 30 jours ou sors",
   description: "Communauté de builders africains francophones. 30 jours pour shipper ton projet, sinon tu es exclu à jamais.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Ship or Die Africa",
     description: "Ship ton projet en 30 jours ou sors. La communauté des builders africains.",
     locale: "fr_FR",
+    images: ["/logo.png"],
   },
 };
 
