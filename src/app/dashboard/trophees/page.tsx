@@ -2,13 +2,6 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-
-type Trophy = {
-  id: string;
-  type: string;
-  awardedAt: string;
-};
-
 const LEAF_META: Record<string, { icon: string; label: string; desc: string }> = {
   FIRST_COMMIT:    { icon: "🌱", label: "Première Graine plantée", desc: "Ton premier commit sur ta mission" },
   FIRST_DEPLOY:    { icon: "🌿", label: "Première Pousse",         desc: "Ton premier déploiement en ligne" },

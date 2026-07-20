@@ -64,32 +64,42 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"overview" | "users" | "missions" | "payments">("overview");
+  const [now] = useState(() => Date.now());
+
+  const isAdmin = session?.user?.role === "ADMIN";
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user) return;
-    if (session.user.role !== "ADMIN") {
-      setError("Accès refusé — tu n'es pas admin.");
-      setLoading(false);
-      return;
-    }
+
+    let cancelled = false;
 
     (async () => {
+      if (!isAdmin) {
+        if (!cancelled) {
+          setError("Accès refusé — tu n'es pas admin.");
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         const res = await fetch("/api/admin/stats");
         if (res.status === 403) {
-          setError("Accès refusé — tu n'es pas admin.");
+          if (!cancelled) setError("Accès refusé — tu n'es pas admin.");
           return;
         }
         if (!res.ok) throw new Error("Erreur serveur");
         const json = await res.json();
-        setData(json);
-      } catch (err) {
-        setError("Impossible de charger les données admin.");
+        if (!cancelled) setData(json);
+      } catch {
+        if (!cancelled) setError("Impossible de charger les données admin.");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [status, session]);
+
+    return () => { cancelled = true; };
+  }, [status, session, isAdmin]);
 
   if (loading) {
     return (
@@ -121,7 +131,7 @@ export default function AdminPage() {
             🛡️ Admin
           </h1>
           <p className="text-base-content/50 text-sm mt-1">
-            Vue d'ensemble de Ship or Die Africa
+            Vue d&apos;ensemble de Ship or Die Africa
           </p>
         </div>
         <span className="badge badge-warning badge-lg">ADMIN</span>
@@ -244,7 +254,7 @@ export default function AdminPage() {
               {data.missions.map((m) => {
                 const daysLeft = Math.max(
                   0,
-                  Math.ceil((new Date(m.deadline).getTime() - Date.now()) / 86400000)
+                  Math.ceil((new Date(m.deadline).getTime() - now) / 86400000)
                 );
                 return (
                   <tr key={m.id}>

@@ -125,7 +125,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.role = (user as any).role ?? "USER";
+        token.role = user.role ?? "USER";
         if (user.telegramChatId) {
           token.telegramChatId = user.telegramChatId;
         }
