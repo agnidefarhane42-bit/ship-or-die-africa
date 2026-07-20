@@ -4,6 +4,7 @@ import { useState } from "react";
 
 export default function Home() {
   const [email, setEmail] = useState("");
+  const [menuOpen, setMenuOpen] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -30,20 +31,46 @@ export default function Home() {
   return (
     <main className="hero-bg min-h-screen">
       {/* NAVBAR */}
-      <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
+      <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto relative z-50">
         <div className="flex-1">
-          <span className="text-2xl font-black tracking-tight">
+          <span className="text-lg sm:text-2xl font-black tracking-tight">
             <span className="gold-text">🌳 Ship or Die</span>
-            <span className="text-base-content/60 text-sm ml-1">Africa</span>
+            <span className="text-base-content/60 text-xs sm:text-sm ml-1">Africa</span>
           </span>
         </div>
-        <div className="flex-none gap-2">
+        {/* Desktop nav */}
+        <div className="hidden sm:flex flex-none gap-2">
           <a href="#pricing" className="btn btn-ghost btn-sm text-base-content/70">Pricing</a>
           <a href="/recolte" className="btn btn-ghost btn-sm text-base-content/70">🌰 La Récolte</a>
           <a href="#how" className="btn btn-ghost btn-sm text-base-content/70">Comment ça marche</a>
           <a href="/login" className="btn btn-gold btn-sm">Se connecter</a>
         </div>
+        {/* Mobile hamburger */}
+        <div className="flex sm:hidden flex-none">
+          <button
+            className="btn btn-ghost btn-square btn-sm"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Menu"
+          >
+            {menuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            )}
+          </button>
+        </div>
       </nav>
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="sm:hidden px-4 pb-4 max-w-6xl mx-auto">
+          <div className="card-glow rounded-2xl p-4 flex flex-col gap-2">
+            <a href="#pricing" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>Pricing</a>
+            <a href="/recolte" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>🌰 La Récolte</a>
+            <a href="#how" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>Comment ça marche</a>
+            <a href="/login" className="btn btn-gold btn-sm" onClick={() => setMenuOpen(false)}>Se connecter</a>
+          </div>
+        </div>
+      )}
 
       {/* HERO */}
       <section className="px-4 sm:px-8 pt-16 pb-20 max-w-4xl mx-auto text-center section-fade">
