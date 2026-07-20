@@ -1,9 +1,10 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
-const links = [
+const baseLinks = [
   { href: "/dashboard", label: "Dashboard", icon: "📊" },
   { href: "/dashboard/mission", label: "Ma Mission", icon: "🎯" },
   { href: "/dashboard/trophees", label: "Feuilles", icon: "🌿" },
@@ -13,11 +14,17 @@ const links = [
   { href: "/dashboard/settings", label: "Paramètres", icon: "⚙️" },
 ];
 
+const adminLink = { href: "/dashboard/admin", label: "Admin", icon: "🛡️" };
+
 export default function Sidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [progress, setProgress] = useState(0);
   const [pauseLeft, setPauseLeft] = useState(3);
+
+  const isAdmin = session?.user?.role === "ADMIN";
+  const links = isAdmin ? [...baseLinks.slice(0, -1), adminLink, baseLinks[baseLinks.length - 1]] : baseLinks;
 
   useEffect(() => {
     (async () => {
