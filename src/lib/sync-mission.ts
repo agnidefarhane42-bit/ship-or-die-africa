@@ -1,32 +1,15 @@
 // ============================================================================
 // sync-mission.ts — CŒUR DE LA MÉCANIQUE PRODUIT
 // ============================================================================
-// Ce fichier est le moteur de gamification de Ship or Die Africa.
-// Il synchronise les missions avec l'API GitHub :
-//   1. Récupère les commits du repo lié à la mission (uniquement depuis startedAt)
-//   2. Calcule le nombre total de commits, le streak et la date du dernier commit
-//   3. Construit l'historique commitsByDay pour la heatmap
-//   4. Attribue les trophées correspondants (sans doublon grâce à @@unique)
-//   5. Marque la mission FAILED si la deadline est dépassée
-//
-// Appelé par le cron /api/cron/sync-missions (1×/jour à 6h UTC, voir vercel.json).
-//
 // Timezone : Africa/Lagos (WAT, UTC+1, sans DST).
-// Les builders sont principalement en Afrique de l'Ouest / Centrale.
-// Bucketisation des jours (streak, commitsByDay) en jour civil Lagos,
-// PAS en UTC via toISOString() — sinon un commit à 23h30 Cotonou bascule au jour suivant.
-// Limite connue : pas encore de User.timezone ; tous les users utilisent Africa/Lagos.
-// Les DateTime startedAt / deadline restent des instants absolus (UTC) en base.
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
 import type { TrophyType } from "@prisma/client";
 import { sendTelegramMessage, sendGroupMessage, escapeHtml } from "@/lib/telegram";
 
-/** Timezone produit par défaut (WAT). */
 const DEFAULT_TZ = "Africa/Lagos";
 
-/** Libellés Baobab pour chaque TrophyType (affichage / notifications) */
 const TROPHY_LABELS: Record<string, string> = {
   FIRST_COMMIT: "Première Graine plantée 🌱",
   FIRST_DEPLOY: "Première Pousse",
@@ -36,13 +19,8 @@ const TROPHY_LABELS: Record<string, string> = {
   EARLY_BIRD: "Premier au Cercle",
 };
 
-/**
- * Jour civil YYYY-MM-DD dans DEFAULT_TZ (Africa/Lagos).
- * Utilise Intl — pas toISOString() (qui est toujours UTC).
- */
 function toLocalDayKey(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  // en-CA → YYYY-MM-DD
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: DEFAULT_TZ,
     year: "numeric",
@@ -51,10 +29,6 @@ function toLocalDayKey(date: Date | string): string {
   }).format(d);
 }
 
-/**
- * Ajoute n jours civils à une clé YYYY-MM-DD (arithmétique pure sur la date).
- * Valide pour Africa/Lagos (pas de DST).
- */
 function addDaysToKey(dayKey: string, n: number): string {
   const [y, m, d] = dayKey.split("-").map(Number);
   const utc = Date.UTC(y, m - 1, d) + n * 86_400_000;
@@ -65,20 +39,12 @@ function addDaysToKey(dayKey: string, n: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
-/**
- * Extrait le owner et le repo depuis une URL GitHub.
- * Ex: https://github.com/agnidefarhane42-bit/ship-or-die-africa → { owner: "agnidefarhane42-bit", repo: "ship-or-die-africa" }
- */
 function parseRepoUrl(repoUrl: string): { owner: string; repo: string } | null {
   const match = repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
   if (!match) return null;
   return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
 }
 
-/**
- * Récupère tous les commits d'un repo GitHub (par pages de 100).
- * Filtre ensuite ceux >= since (mission.startedAt).
- */
 async function fetchAllCommits(
   owner: string,
   repo: string,
@@ -91,8 +57,6 @@ async function fetchAllCommits(
   const allCommits: { date: string }[] = [];
   let page = 1;
   let hasMore = true;
-
-  // since ISO pour l'API GitHub (évite de tout paginer inutilement)
   const sinceParam = since ? `&since=${since.toISOString()}` : "";
 
   while (hasMore && page <= 10) {
@@ -118,7 +82,6 @@ async function fetchAllCommits(
     page++;
   }
 
-  // Double filtre côté code pour être sûr (API since est inclusive)
   if (since) {
     const sinceMs = since.getTime();
     return allCommits.filter((c) => new Date(c.date).getTime() >= sinceMs);
@@ -127,11 +90,6 @@ async function fetchAllCommits(
   return allCommits;
 }
 
-/**
- * Calcule le streak de jours consécutifs avec au moins un commit.
- * Jours civils en Africa/Lagos.
- * Si le dernier jour de commit n'est ni aujourd'hui ni hier (Lagos), retourne 0.
- */
 function calculateStreak(commitDates: string[]): number {
   if (commitDates.length === 0) return 0;
 
@@ -141,7 +99,6 @@ function calculateStreak(commitDates: string[]): number {
   const today = toLocalDayKey(new Date());
   const yesterday = addDaysToKey(today, -1);
 
-  // Streak courant uniquement si le dernier commit est aujourd'hui ou hier (Lagos)
   if (sortedDays[0] !== today && sortedDays[0] !== yesterday) {
     return 0;
   }
@@ -161,20 +118,12 @@ function calculateStreak(commitDates: string[]): number {
   return streak;
 }
 
-/**
- * Construit un objet commitsByDay à partir des dates de commits.
- * Format: { "2026-07-01": 3, "2026-07-02": 0, ... }
- * Clés = jours civils Africa/Lagos.
- * Couvre la période startedAt → deadline (bucketisés en jour local).
- */
 function buildCommitsByDay(
   commitDates: string[],
   startedAt: Date,
   deadline: Date
 ): Record<string, number> {
   const result: Record<string, number> = {};
-
-  // Compter les commits par jour civil Lagos
   const counts: Record<string, number> = {};
   for (const d of commitDates) {
     const day = toLocalDayKey(d);
@@ -185,7 +134,6 @@ function buildCommitsByDay(
   const endKey = toLocalDayKey(deadline);
 
   let cursor = startKey;
-  // Garde-fou : max ~400 jours pour éviter une boucle infinie si données absurdes
   let guard = 0;
   while (cursor <= endKey && guard < 400) {
     result[cursor] = counts[cursor] || 0;
@@ -196,18 +144,12 @@ function buildCommitsByDay(
   return result;
 }
 
-/**
- * Attribue un trophée à une mission s'il n'existe pas déjà.
- * @@unique([missionId, type]) protège contre les doublons.
- * En cas de création réussie, notifie l'utilisateur si notifyTrophyUnlocked + telegramChatId.
- */
 async function awardTrophyIfNew(missionId: string, type: string): Promise<void> {
   try {
     await prisma.trophy.create({
       data: { missionId, type: type as unknown as TrophyType },
     });
 
-    // Nouveau trophée réellement créé → notification « feuille débloquée »
     try {
       const mission = await prisma.mission.findUnique({
         where: { id: missionId },
@@ -237,16 +179,12 @@ async function awardTrophyIfNew(missionId: string, type: string): Promise<void> 
       }
     } catch (notifyErr) {
       console.error("notifyTrophyUnlocked error:", notifyErr);
-      // ne bloque pas l'attribution du trophée
     }
   } catch {
-    // déjà existant (unique constraint)
+    // déjà existant
   }
 }
 
-/**
- * Synchronise une mission avec GitHub : commits, streak, trophées, statut.
- */
 export async function syncMission(missionId: string): Promise<void> {
   const mission = await prisma.mission.findUnique({
     where: { id: missionId },
@@ -259,21 +197,18 @@ export async function syncMission(missionId: string): Promise<void> {
   const repoInfo = parseRepoUrl(mission.repoUrl);
   if (!repoInfo) return;
 
-  // Récupérer uniquement les commits depuis le début de la mission
   const commits = await fetchAllCommits(repoInfo.owner, repoInfo.repo, mission.startedAt);
   const commitCount = commits.length;
   const lastCommitAt =
     commits.length > 0 ? new Date(commits[0].date) : null;
   const streak = calculateStreak(commits.map((c) => c.date));
 
-  // Construire commitsByDay pour la heatmap (jours Africa/Lagos)
   const commitsByDay = buildCommitsByDay(
     commits.map((c) => c.date),
     mission.startedAt,
     mission.deadline
   );
 
-  // Mettre à jour la mission
   await prisma.mission.update({
     where: { id: missionId },
     data: {
@@ -284,7 +219,6 @@ export async function syncMission(missionId: string): Promise<void> {
     },
   });
 
-  // Attribuer les trophées
   if (commitCount >= 1) {
     await awardTrophyIfNew(missionId, "FIRST_COMMIT");
   }
@@ -298,18 +232,14 @@ export async function syncMission(missionId: string): Promise<void> {
     await awardTrophyIfNew(missionId, "FIRST_DEPLOY");
   }
 
-  // Vérifier la deadline (instant absolu — inchangé)
   if (new Date() > mission.deadline && mission.status === "IN_PROGRESS") {
     await prisma.mission.update({
       where: { id: missionId },
       data: { status: "FAILED" },
     });
 
-    // ── Annonce douce dans le groupe Telegram ──
-    // Respecte user.notifyGroupOnShipFail (opt-out).
-    // Ton bienveillant, jamais humiliant — on encourage, pas de honte publique.
-    // Non-bloquant : si Telegram est indisponible, le FAIL réussit quand même.
-    if (mission.user?.notifyGroupOnShipFail) {
+    // Opt-in par défaut pour les users Mongo sans le champ
+    if (mission.user?.notifyGroupOnShipFail ?? true) {
       try {
         const baseUrl = process.env.NEXTAUTH_URL || "";
         const builderName = escapeHtml(mission.user?.name || "Un bâtisseur");
@@ -324,7 +254,6 @@ export async function syncMission(missionId: string): Promise<void> {
         await sendGroupMessage(groupMsg);
       } catch (groupErr) {
         console.error("Group announcement (fail) error:", groupErr);
-        // ne bloque pas le FAIL
       }
     }
   }
