@@ -40,11 +40,14 @@ export default function Sidebar() {
         const now = new Date();
         const left = Math.max(
           0,
-          Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)
+          Math.floor((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)
         );
-        const day = Math.floor(
-          (now.getTime() - new Date(mission.startedAt).getTime()) / 86400000
-        ) + 1;
+        const day = Math.min(
+          30,
+          Math.floor(
+            (now.getTime() - new Date(mission.startedAt).getTime()) / 86400000
+          ) + 1
+        );
         setDaysLeft(left);
         setProgress(Math.min(100, Math.round((day / 30) * 100)));
         setPauseLeft(Math.max(0, 3 - (mission.pauseDaysUsed ?? 0)));
@@ -57,10 +60,14 @@ export default function Sidebar() {
   return (
     <aside className="hidden sm:flex flex-col w-64 min-h-screen border-r border-base-content/10 bg-base-200/50 backdrop-blur-xl fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-base-content/10">
-        <Link href="/" className="flex items-center gap-2"><img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" /><span className="text-xl font-black gold-text">Ship or Die</span></Link>
+        <Link href="/" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" />
+          <span className="text-xl font-black gold-text">Ship or Die</span>
+        </Link>
         <p className="text-xs text-base-content/40 mt-1">Africa</p>
       </div>
-      
+
       <nav className="flex-1 p-4 space-y-1">
         {links.map((link) => {
           const active = pathname === link.href;
