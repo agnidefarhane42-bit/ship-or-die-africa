@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Gate de paiement ──
-    // Un utilisateur doit avoir au moins un Payment PAID pour créer une mission.
     // Bypass pour l'admin (créateur du site) — accès gratuit.
     if (session.user.role !== "ADMIN") {
       const paid = await prisma.payment.findFirst({
@@ -111,15 +110,12 @@ export async function GET() {
     const missions = await prisma.mission.findMany({
       where: { userId: session.user.id },
       include: { trophies: true },
-      // orderBy status est un pré-tri approximatif ; le .sort() JS ci-dessous
-      // garantit IN_PROGRESS en premier, puis par createdAt desc.
       orderBy: [
         { status: "asc" },
         { createdAt: "desc" },
       ],
     });
 
-    // Garantir que la mission IN_PROGRESS (si existe) est en première position
     missions.sort((a, b) => {
       if (a.status === "IN_PROGRESS" && b.status !== "IN_PROGRESS") return -1;
       if (b.status === "IN_PROGRESS" && a.status !== "IN_PROGRESS") return 1;
@@ -133,7 +129,7 @@ export async function GET() {
   }
 }
 
-// Mettre à jour une mission (statut + champs Récolte + pause)
+// Mettre à jour une mission (statut + champs + pause)
 export async function PATCH(req: NextRequest) {
   try {
     const session = await auth();
@@ -142,13 +138,23 @@ export async function PATCH(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { missionId, status, tagline, screenshotUrl, isPublic, url, usePauseDay } = body;
+    const {
+      missionId,
+      status,
+      tagline,
+      screenshotUrl,
+      isPublic,
+      url,
+      usePauseDay,
+      title,
+      description,
+      repoUrl,
+    } = body;
 
     if (!missionId) {
       return NextResponse.json({ error: "missionId requis" }, { status: 400 });
     }
 
-    // Vérifier que la mission appartient à l'utilisateur connecté
     const mission = await prisma.mission.findUnique({
       where: { id: missionId },
       include: { user: true },
@@ -162,7 +168,7 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
-    // ── Cas pause : consommer 1 jour de pause ──
+    // ── Cas pause ──
     if (usePauseDay === true) {
       if (mission.status !== "IN_PROGRESS") {
         return NextResponse.json({ error: "Pause uniquement possible sur une mission en cours" }, { status: 400 });
@@ -195,7 +201,6 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "Statut non autorisé" }, { status: 400 });
       }
 
-      // Empêcher le re-ship / re-abandon d'une mission déjà terminée
       if (mission.status !== "IN_PROGRESS") {
         return NextResponse.json(
           { error: "Cette mission est déjà terminée (shippée ou abandonnée)." },
@@ -203,22 +208,19 @@ export async function PATCH(req: NextRequest) {
         );
       }
 
-      // Pour SHIPPED, exiger une URL renseignée (soit déjà sur la mission, soit passée dans la requête)
       const effectiveUrl = url || mission.url;
       if (status === "SHIPPED" && !effectiveUrl) {
         return NextResponse.json({ error: "URL du projet requise pour shipper" }, { status: 400 });
       }
 
-      const updateData: Prisma.MissionUpdateInput = { status } as Prisma.MissionUpdateInput;
+      const updateData: Prisma.MissionUpdateInput = { status };
       if (status === "SHIPPED") {
         updateData.shippedAt = new Date();
 
-        // Set l'URL si fournie dans le ship
         if (url) {
           updateData.url = url;
         }
 
-        // Accepter les champs Récolte au moment du ship
         if (tagline !== undefined) {
           if (!tagline || tagline.trim().length === 0) {
             return NextResponse.json({ error: "Tagline requise pour shipper" }, { status: 400 });
@@ -242,22 +244,16 @@ export async function PATCH(req: NextRequest) {
         include: { trophies: true },
       });
 
-      // Attribuer le trophée SHIPPED (@@unique protège les doublons par mission)
       if (status === "SHIPPED") {
         try {
           await prisma.trophy.create({
             data: { missionId, type: "SHIPPED" },
           });
-          // Notif uniquement si create réussi
           await notifyTrophyUnlocked(mission.user, "SHIPPED", mission.title);
         } catch {
-          // déjà existant grâce à @@unique([missionId, type])
+          // déjà existant
         }
 
-        // ── EARLY_BIRD global (au plus un dans toute la base) ──
-        // Check + create défensif compatible MongoDB (pas de transaction multi-doc fiable).
-        // findFirst sur type=EARLY_BIRD (global), pas count(missions SHIPPED).
-        // Si deux ships concurrent → le second create échoue ou voit déjà un EARLY_BIRD.
         try {
           const existingEarlyBird = await prisma.trophy.findFirst({
             where: { type: "EARLY_BIRD" },
@@ -268,22 +264,18 @@ export async function PATCH(req: NextRequest) {
             await prisma.trophy.create({
               data: { missionId, type: "EARLY_BIRD" },
             });
-            // Notif uniquement si create réussi
             await notifyTrophyUnlocked(mission.user, "EARLY_BIRD", mission.title);
           }
         } catch {
-          // Course : un autre ship a créé EARLY_BIRD entre le findFirst et le create
-          // (ou @@unique missionId+type) — ignorer silencieusement
+          // course EARLY_BIRD
         }
 
-        // ── notifySomeoneShipped ──
-        // Notifier les autres users qui ont activé cette préférence
         try {
           const interestedUsers = await prisma.user.findMany({
             where: {
               notifySomeoneShipped: true,
               telegramChatId: { not: null },
-              id: { not: session.user.id }, // pas l'auteur
+              id: { not: session.user.id },
             },
             select: { telegramChatId: true, name: true },
           });
@@ -301,14 +293,10 @@ export async function PATCH(req: NextRequest) {
           }
         } catch (notifyErr) {
           console.error("notifySomeoneShipped error:", notifyErr);
-          // ne bloque pas le ship
         }
 
-        // ── Annonce dans le groupe Telegram ──
-        // Poste un message festif dans le groupe communautaire.
-        // Respecte user.notifyGroupOnShipFail (opt-out).
-        // Non-bloquant : si Telegram est indisponible, le ship réussit quand même.
-        if (mission.user?.notifyGroupOnShipFail) {
+        // Opt-in par défaut (anciens users Mongo sans le champ)
+        if (mission.user?.notifyGroupOnShipFail ?? true) {
           try {
             const baseUrl = process.env.NEXTAUTH_URL || "";
             const shipperName = escapeHtml(mission.user?.name || "Un bâtisseur");
@@ -327,12 +315,10 @@ export async function PATCH(req: NextRequest) {
             await sendGroupMessage(groupMsg);
           } catch (groupErr) {
             console.error("Group announcement (ship) error:", groupErr);
-            // ne bloque pas le ship
           }
         }
       }
 
-      // Recharger avec trophées à jour
       const final = await prisma.mission.findUnique({
         where: { id: missionId },
         include: { trophies: true },
@@ -341,8 +327,21 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ mission: final });
     }
 
-    // ── Cas 2 : mise à jour des champs (pas de changement de statut) ──
-    const updateData: Prisma.MissionUpdateInput = {} as Prisma.MissionUpdateInput;
+    // ── Cas 2 : mise à jour des champs (édition mission / récolte) ──
+    const updateData: Prisma.MissionUpdateInput = {};
+    if (title !== undefined) {
+      const t = typeof title === "string" ? title.trim() : "";
+      if (!t) {
+        return NextResponse.json({ error: "Le titre ne peut pas être vide" }, { status: 400 });
+      }
+      updateData.title = t;
+    }
+    if (description !== undefined) {
+      updateData.description = typeof description === "string" ? description : "";
+    }
+    if (repoUrl !== undefined) {
+      updateData.repoUrl = repoUrl || null;
+    }
     if (url !== undefined) {
       updateData.url = url || null;
     }
