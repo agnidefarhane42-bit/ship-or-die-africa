@@ -157,7 +157,7 @@ export default async function BuilderProfilePage({ params }: Props) {
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
         <div className="flex-1">
           <Link href="/" className="text-2xl font-black tracking-tight">
-            <span className="gold-text">🌳 Ship or Die</span>
+            <img src="/logo.png" alt="Logo" className="w-7 h-7 inline-block object-contain align-middle" /> <span className="gold-text">Ship or Die</span>
             <span className="text-base-content/60 text-sm ml-1">Africa</span>
           </Link>
         </div>
@@ -283,7 +283,7 @@ export default async function BuilderProfilePage({ params }: Props) {
 
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <Link href="/" className="font-black gold-text">🌳 Ship or Die Africa</Link>
+          <Link href="/" className="font-black gold-text"><img src="/logo.png" alt="Logo" className="w-6 h-6 inline-block object-contain align-middle" /> Ship or Die Africa</Link>
           <Link href="/recolte" className="text-sm text-base-content/40 hover:text-base-content">🌰 Voir La Récolte</Link>
         </div>
       </footer>

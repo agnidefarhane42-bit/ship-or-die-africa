@@ -50,7 +50,7 @@ export default function Sidebar() {
   return (
     <aside className="hidden sm:flex flex-col w-64 min-h-screen border-r border-base-content/10 bg-base-200/50 backdrop-blur-xl fixed left-0 top-0 z-40">
       <div className="p-6 border-b border-base-content/10">
-        <Link href="/" className="text-xl font-black gold-text">🌳 Ship or Die</Link>
+        <Link href="/" className="flex items-center gap-2"><img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain" /><span className="text-xl font-black gold-text">Ship or Die</span></Link>
         <p className="text-xs text-base-content/40 mt-1">Africa</p>
       </div>
       

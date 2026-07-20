@@ -297,7 +297,7 @@ export default function Home() {
       <footer className="px-4 sm:px-8 py-12 max-w-4xl mx-auto border-t border-base-content/10 mt-20">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div>
-            <span className="font-black gold-text">🌳 Ship or Die Africa</span>
+            <span className="font-black gold-text"><img src="/logo.png" alt="Logo" className="w-6 h-6 inline-block object-contain align-middle" /> Ship or Die Africa</span>
             <p className="text-sm text-base-content/40 mt-1">Built by builders, for builders.</p>
           </div>
           <div className="flex gap-6 text-sm text-base-content/40">

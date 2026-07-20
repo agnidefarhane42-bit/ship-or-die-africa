@@ -41,7 +41,7 @@ export default function RegisterPage() {
     <main className="hero-bg min-h-screen flex items-center justify-center px-4">
       <div className="card-glow rounded-3xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-black gold-text mb-2">🌳 Ship or Die Africa</h1>
+          <h1 className="text-2xl font-black gold-text mb-2"><img src="/logo.png" alt="Logo" className="w-6 h-6 inline-block object-contain align-middle" /> Ship or Die Africa</h1>
           <p className="text-base-content/50 text-sm">Rejoins le Cercle</p>
         </div>
         {error && (
