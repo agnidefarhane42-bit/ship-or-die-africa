@@ -2,19 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendTelegramMessage, escapeHtml } from "@/lib/telegram";
 
-/**
- * GET /api/cron/notify
- * Cron de notifications Telegram.
- * Auth : Bearer CRON_SECRET OU header x-vercel-cron: 1
- * Planifié à 6h30 UTC (voir vercel.json), après sync-missions (6h UTC).
- *
- * Pour chaque mission IN_PROGRESS dont l'utilisateur a un telegramChatId :
- *   1. Rappel quotidien (si notifyDailyReminder)
- *   2. Alerte de deadline à J-7, J-3, J-1 (si notifyDeadlineAlert, sans doublon)
- *
- * Les paliers déjà notifiés sont stockés dans mission.deadlineAlertsNotified
- * AVANT l'envoi Telegram (mieux vaut un rappel manqué qu'un spam).
- */
+/** Jour civil Africa/Lagos (aligné avec commitsByDay). */
+function toLagosDayKey(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 function isAuthorizedCron(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
   const authHeader = req.headers.get("authorization");
@@ -43,14 +40,13 @@ export async function GET(req: NextRequest) {
       const user = mission.user;
       if (!user?.telegramChatId) continue;
 
-      // ── Calcul des jours restants ──
       const msLeft = mission.deadline.getTime() - now.getTime();
       const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
       const safeTitle = escapeHtml(mission.title);
 
-      // ── Rappel quotidien (si autorisé) ──
       if (user.notifyDailyReminder) {
-        const todayKey = now.toISOString().substring(0, 10);
+        // Clé Lagos — pas toISOString() UTC
+        const todayKey = toLagosDayKey(now);
         const commitsToday =
           (mission.commitsByDay as Record<string, number> | null)?.[todayKey] ?? 0;
 
@@ -66,9 +62,6 @@ export async function GET(req: NextRequest) {
         remindersSent++;
       }
 
-      // ── Alerte de deadline (J-7, J-3, J-1) ──
-      // Ordre : 1) check  2) persist en DB  3) envoi Telegram
-      // Si l'envoi échoue : on log, on ne retire pas le palier (anti-spam).
       if (user.notifyDeadlineAlert) {
         const alerts = mission.deadlineAlertsNotified as string[] | null;
         const alreadyNotified = alerts || [];
@@ -79,7 +72,6 @@ export async function GET(req: NextRequest) {
         else if (daysLeft === 1) alertLevel = "J-1";
 
         if (alertLevel && !alreadyNotified.includes(alertLevel)) {
-          // 1. Persister d'abord pour éviter les doublons si Telegram réussit mais update échoue plus tard
           const updatedAlerts = [...alreadyNotified, alertLevel];
           await prisma.mission.update({
             where: { id: mission.id },
@@ -107,7 +99,6 @@ export async function GET(req: NextRequest) {
               `Deadline alert Telegram failed (mission=${mission.id}, level=${alertLevel}):`,
               sendErr
             );
-            // palier déjà en DB — pas de retry spam
           }
         }
       }
