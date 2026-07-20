@@ -63,13 +63,12 @@ export default function SettingsPage() {
   const isGitHubFallback = !avatarUrl && !!displayAvatarUrl;
 
   useEffect(() => {
-    if (session?.user) {
-      setName(session.user.name || "");
-      setGithub(session.user.githubUsername || "");
-      setTelegramConnected(!!session.user.telegramChatId);
-    }
-
     (async () => {
+      if (session?.user) {
+        setName(session.user.name || "");
+        setGithub(session.user.githubUsername || "");
+        setTelegramConnected(!!session.user.telegramChatId);
+      }
       try {
         const res = await fetch("/api/missions");
         const data = await res.json();
@@ -355,7 +354,7 @@ export default function SettingsPage() {
         <h2 className="font-bold text-lg">🔗 Connexion GitHub</h2>
         <p className="text-sm text-base-content/50">
           Connecte ton GitHub pour tracker automatiquement tes commits sur le leaderboard.
-          Sans cette connexion, ton compte n'apparaîtra pas dans le tracking automatique.
+          Sans cette connexion, ton compte n&apos;apparaîtra pas dans le tracking automatique.
         </p>
 
         {githubConnected ? (
@@ -373,7 +372,7 @@ export default function SettingsPage() {
           <div className="flex flex-col items-center gap-3 py-4">
             <div className="w-12 h-12 rounded-full bg-base-content/5 flex items-center justify-center text-2xl opacity-50">🔒</div>
             <p className="text-xs text-base-content/40 text-center max-w-xs">
-              Ton compte n'apparaîtra pas dans le tracking automatique tant que GitHub n'est pas connecté.
+              Ton compte n&apos;apparaîtra pas dans le tracking automatique tant que GitHub n&apos;est pas connecté.
             </p>
             <button
               onClick={() => signIn("github")}
@@ -520,14 +519,14 @@ export default function SettingsPage() {
         <p className="text-base-content/70 font-mono text-sm bg-base-200 rounded-xl px-4 py-3">
           {session?.user?.email || "—"}
         </p>
-        <p className="text-xs text-base-content/40">L'email ne peut pas être modifié.</p>
+        <p className="text-xs text-base-content/40">L&apos;email ne peut pas être modifié.</p>
       </div>
 
       {/* DANGER */}
       <div className="shame-card rounded-2xl p-6">
         <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
         <p className="text-sm text-base-content/50 mb-4">
-          Si tu quittes la cohorte, tu es marqué "racines coupées" et exclu à jamais. Pas de retour.
+          Si tu quittes la cohorte, tu es marqué &quot;racines coupées&quot; et exclu à jamais. Pas de retour.
         </p>
 
         {abandonMsg && (

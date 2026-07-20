@@ -87,7 +87,7 @@ export default function EquipagePage() {
         <div className="card-glow rounded-2xl p-6 text-center">
           <div className="text-4xl mb-3">🌱</div>
           <p className="text-base-content/60 text-sm">
-            Tu es seul dans ta cohorte pour l'instant. Les autres bâtisseurs apparaîtront ici dès qu'ils rejoindront le Cercle.
+            Tu es seul dans ta cohorte pour l&apos;instant. Les autres bâtisseurs apparaîtront ici dès qu&apos;ils rejoindront le Cercle.
           </p>
         </div>
       )}

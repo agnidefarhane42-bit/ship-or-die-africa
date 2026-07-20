@@ -62,7 +62,16 @@ export async function PATCH(req: NextRequest) {
     const notifyGroupOnShipFail = typeof body.notifyGroupOnShipFail === "boolean" ? body.notifyGroupOnShipFail : undefined;
 
     // Construire l'objet data — ne mettre à jour que les champs fournis
-    const data: any = {};
+    const data: {
+      name?: string | null;
+      bio?: string | null;
+      githubUsername?: string | null;
+      notifyDailyReminder?: boolean;
+      notifyDeadlineAlert?: boolean;
+      notifyTrophyUnlocked?: boolean;
+      notifySomeoneShipped?: boolean;
+      notifyGroupOnShipFail?: boolean;
+    } = {};
     if (name !== undefined) data.name = name || null;
     if (bio !== undefined) data.bio = bio || null;
     if (githubUsername !== undefined) data.githubUsername = githubUsername || null;

@@ -20,6 +20,7 @@
 // ============================================================================
 
 import { prisma } from "@/lib/prisma";
+import type { TrophyType } from "@prisma/client";
 import { sendTelegramMessage, sendGroupMessage, escapeHtml } from "@/lib/telegram";
 
 /** Timezone produit par défaut (WAT). */
@@ -203,7 +204,7 @@ function buildCommitsByDay(
 async function awardTrophyIfNew(missionId: string, type: string): Promise<void> {
   try {
     await prisma.trophy.create({
-      data: { missionId, type: type as any },
+      data: { missionId, type: type as unknown as TrophyType },
     });
 
     // Nouveau trophée réellement créé → notification « feuille débloquée »

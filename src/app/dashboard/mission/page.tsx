@@ -281,7 +281,7 @@ export default function MissionPage() {
           </div>
 
           {mission.tagline && (
-            <p className="text-base-content/50 text-sm italic mb-4">"{mission.tagline}"</p>
+            <p className="text-base-content/50 text-sm italic mb-4">&quot;{mission.tagline}&quot;</p>
           )}
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -318,7 +318,7 @@ export default function MissionPage() {
           <div className="text-5xl mb-4">🥀</div>
           <h2 className="text-xl font-bold mb-2">Racines coupées</h2>
           <p className="text-base-content/50 text-sm mb-6">
-            <b>{mission.title}</b> n'a pas pu être shippé dans les 30 jours. Ça arrive aux meilleurs bâtisseurs.
+            <b>{mission.title}</b> n&apos;a pas pu être shippé dans les 30 jours. Ça arrive aux meilleurs bâtisseurs.
           </p>
           <button
             onClick={() => {
@@ -331,7 +331,7 @@ export default function MissionPage() {
             }}
             className="btn btn-pirate"
           >
-            🌱 Retenter l'aventure
+            🌱 Retenter l&apos;aventure
           </button>
         </div>
       </div>
@@ -597,7 +597,7 @@ export default function MissionPage() {
       {/* DANGER ZONE */}
       <div className="shame-card rounded-2xl p-6">
         <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
-        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué "racines coupées".</p>
+        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué &quot;racines coupées&quot;.</p>
         {mission.status === "IN_PROGRESS" ? (
           <p className="text-xs text-base-content/40">Tu peux abandonner depuis la page Paramètres.</p>
         ) : (

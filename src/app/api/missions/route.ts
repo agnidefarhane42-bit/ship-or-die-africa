@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { sendTelegramMessage, sendGroupMessage, escapeHtml } from "@/lib/telegram";
 
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Récupérer les missions du user connecté (IN_PROGRESS en premier)
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -208,7 +209,7 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json({ error: "URL du projet requise pour shipper" }, { status: 400 });
       }
 
-      const updateData: any = { status };
+      const updateData: Prisma.MissionUpdateInput = { status } as Prisma.MissionUpdateInput;
       if (status === "SHIPPED") {
         updateData.shippedAt = new Date();
 
@@ -341,7 +342,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // ── Cas 2 : mise à jour des champs (pas de changement de statut) ──
-    const updateData: any = {};
+    const updateData: Prisma.MissionUpdateInput = {} as Prisma.MissionUpdateInput;
     if (url !== undefined) {
       updateData.url = url || null;
     }

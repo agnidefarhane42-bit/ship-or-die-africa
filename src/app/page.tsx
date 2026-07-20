@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function Home() {
@@ -33,20 +34,20 @@ export default function Home() {
       {/* NAVBAR */}
       <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto relative z-50">
         <div className="flex-1">
-          <a href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2">
             <img src="/logo.png" alt="Ship or Die Africa" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
             <span className="text-lg sm:text-xl font-black tracking-tight">
               <span className="gold-text">Ship or Die</span>
               <span className="text-base-content/60 text-xs sm:text-sm ml-1">Africa</span>
             </span>
-          </a>
+          </Link>
         </div>
         {/* Desktop nav */}
         <div className="hidden sm:flex flex-none gap-2">
           <a href="#pricing" className="btn btn-ghost btn-sm text-base-content/70">Pricing</a>
-          <a href="/recolte" className="btn btn-ghost btn-sm text-base-content/70">🌰 La Récolte</a>
+          <Link href="/recolte" className="btn btn-ghost btn-sm text-base-content/70">🌰 La Récolte</Link>
           <a href="#how" className="btn btn-ghost btn-sm text-base-content/70">Comment ça marche</a>
-          <a href="/login" className="btn btn-gold btn-sm">Se connecter</a>
+          <Link href="/login" className="btn btn-gold btn-sm">Se connecter</Link>
         </div>
         {/* Mobile hamburger */}
         <div className="flex sm:hidden flex-none">
@@ -68,9 +69,9 @@ export default function Home() {
         <div className="sm:hidden px-4 pb-4 max-w-6xl mx-auto">
           <div className="card-glow rounded-2xl p-4 flex flex-col gap-2">
             <a href="#pricing" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>Pricing</a>
-            <a href="/recolte" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>🌰 La Récolte</a>
+            <Link href="/recolte" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>🌰 La Récolte</Link>
             <a href="#how" className="btn btn-ghost btn-sm text-base-content/70 justify-start" onClick={() => setMenuOpen(false)}>Comment ça marche</a>
-            <a href="/login" className="btn btn-gold btn-sm" onClick={() => setMenuOpen(false)}>Se connecter</a>
+            <Link href="/login" className="btn btn-gold btn-sm" onClick={() => setMenuOpen(false)}>Se connecter</Link>
           </div>
         </div>
       )}
@@ -87,7 +88,7 @@ export default function Home() {
         <p className="text-lg sm:text-xl text-base-content/60 mb-10 max-w-2xl mx-auto">
           Pas un cours. Pas un bootcamp. Un deadline, une communauté, et la pression positive pour finir.
           <br /><br />
-          App, site, bot, API — tant que c'est utilisable par quelqu'un d'autre que toi.
+          App, site, bot, API — tant que c&apos;est utilisable par quelqu&apos;un d&apos;autre que toi.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
           <a href="#pricing" className="btn btn-pirate btn-lg px-8">
@@ -105,7 +106,7 @@ export default function Home() {
       {/* PROBLEM */}
       <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-black mb-4">"Je suis à deux semaines du lancement."</h2>
+          <h2 className="text-3xl font-black mb-4">&quot;Je suis à deux semaines du lancement.&quot;</h2>
           <p className="text-xl text-base-content/50">Ça fait 4 mois que tu dis ça. 🌵</p>
         </div>
         <div className="grid sm:grid-cols-3 gap-6">
@@ -122,7 +123,7 @@ export default function Home() {
           <div className="card-glow rounded-2xl p-6">
             <div className="text-4xl mb-4">🏝️</div>
             <h3 className="font-bold text-lg mb-2">Solo</h3>
-            <p className="text-base-content/50 text-sm">Personne ne te demande "tu as bossé quoi aujourd'hui ?". Donc tu ne finis rien.</p>
+            <p className="text-base-content/50 text-sm">Personne ne te demande &quot;tu as bossé quoi aujourd&apos;hui ?&quot;. Donc tu ne finis rien.</p>
           </div>
         </div>
       </section>
@@ -136,12 +137,12 @@ export default function Home() {
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-error/10 border border-error/30 flex items-center justify-center text-3xl mb-4">🌳</div>
             <h3 className="font-bold text-xl mb-3">01 · Rejoins le Cercle</h3>
-            <p className="text-base-content/50 text-sm">Un groupe de bâtisseurs africains qui livrent. Check-in quotidien : "j'ai bossé sur X aujourd'hui". GitHub optionnel — ce qui compte c'est la progression, pas l'outil.</p>
+            <p className="text-base-content/50 text-sm">Un groupe de bâtisseurs africains qui livrent. Check-in quotidien : &quot;j&apos;ai bossé sur X aujourd&apos;hui&quot;. GitHub optionnel — ce qui compte c&apos;est la progression, pas l&apos;outil.</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-warning/10 border border-warning/30 flex items-center justify-center text-3xl mb-4">🎯</div>
             <h3 className="font-bold text-xl mb-3">02 · Un petit pari</h3>
-            <p className="text-base-content/50 text-sm">Une feature qui marche. Un lien que quelqu'un peut ouvrir. C'est tout ce qu'il faut pour valider. On te guide étape par étape.</p>
+            <p className="text-base-content/50 text-sm">Une feature qui marche. Un lien que quelqu&apos;un peut ouvrir. C&apos;est tout ce qu&apos;il faut pour valider. On te guide étape par étape.</p>
           </div>
           <div className="text-center">
             <div className="w-20 h-20 mx-auto rounded-2xl bg-success/10 border border-success/30 flex items-center justify-center text-3xl mb-4">🌱</div>
@@ -157,10 +158,10 @@ export default function Home() {
           <div className="text-5xl mb-6">⚠️</div>
           <h2 className="text-2xl sm:text-3xl font-black mb-4">Deadline manquée = Racines coupées</h2>
           <p className="text-base-content/60 mb-6 max-w-md mx-auto">
-            On est compréhensifs — coupure de courant, internet instable, boulot à côté. C'est pour ça que tu as <b className="text-warning">3 jours de pause</b> à utiliser quand tu veux.
+            On est compréhensifs — coupure de courant, internet instable, boulot à côté. C&apos;est pour ça que tu as <b className="text-warning">3 jours de pause</b> à utiliser quand tu veux.
           </p>
           <ul className="text-left max-w-md mx-auto space-y-3 text-base-content/60">
-            <li className="flex gap-3"><span className="text-warning">⚠️</span> Profil marqué "racines coupées" (en mémoire, pas en honte)</li>
+            <li className="flex gap-3"><span className="text-warning">⚠️</span> Profil marqué &quot;racines coupées&quot; (en mémoire, pas en honte)</li>
             <li className="flex gap-3"><span className="text-warning">⚠️</span> Accès suspendu à la communauté</li>
             <li className="flex gap-3"><span className="text-warning">⚠️</span> Pas de remboursement</li>
             <li className="flex gap-3"><span className="text-success">✓</span> Tu peux revenir dans une prochaine cohorte (en repayant)</li>
@@ -190,7 +191,7 @@ export default function Home() {
 
       {/* WHO IS THIS FOR */}
       <section className="px-4 sm:px-8 py-16 max-w-4xl mx-auto">
-        <h2 className="text-3xl font-black text-center mb-12">C'est pour qui ?</h2>
+        <h2 className="text-3xl font-black text-center mb-12">C&apos;est pour qui ?</h2>
         <div className="grid sm:grid-cols-2 gap-6">
           <div className="card-glow rounded-2xl p-6">
             <div className="text-3xl mb-3">✅</div>
@@ -198,9 +199,9 @@ export default function Home() {
             <ul className="space-y-2 text-sm text-base-content/60">
               <li>• Tu as un projet en cours que tu ne finis jamais</li>
               <li>• Tu codes seul et personne ne te push</li>
-              <li>• Tu as besoin d'un deadline pour avancer</li>
+              <li>• Tu as besoin d&apos;un deadline pour avancer</li>
               <li>• App, site, bot, API, outil — tous les projets sont bienvenus</li>
-              <li>• Tu veux faire partie d'une communauté de bâtisseurs africains</li>
+              <li>• Tu veux faire partie d&apos;une communauté de bâtisseurs africains</li>
             </ul>
           </div>
           <div className="card-glow rounded-2xl p-6">
@@ -208,9 +209,9 @@ export default function Home() {
             <h3 className="font-bold text-lg mb-3">Pas pour toi si...</h3>
             <ul className="space-y-2 text-sm text-base-content/60">
               <li>• Tu cherches un cours ou un tuto</li>
-              <li>• Tu veux qu'on code à ta place</li>
-              <li>• Tu n'as pas 1h par jour à consacrer</li>
-              <li>• Tu n'as pas encore de projet en tête</li>
+              <li>• Tu veux qu&apos;on code à ta place</li>
+              <li>• Tu n&apos;as pas 1h par jour à consacrer</li>
+              <li>• Tu n&apos;as pas encore de projet en tête</li>
             </ul>
           </div>
         </div>
@@ -301,8 +302,8 @@ export default function Home() {
             <p className="text-sm text-base-content/40 mt-1">Built by builders, for builders.</p>
           </div>
           <div className="flex gap-6 text-sm text-base-content/40">
-            <a href="/login" className="hover:text-base-content">Se connecter</a>
-            <a href="/recolte" className="hover:text-base-content">🌰 La Récolte</a>
+            <Link href="/login" className="hover:text-base-content">Se connecter</Link>
+            <Link href="/recolte" className="hover:text-base-content">🌰 La Récolte</Link>
             <span>·</span>
             <span>© 2026</span>
           </div>

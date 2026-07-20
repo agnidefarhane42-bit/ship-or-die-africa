@@ -78,6 +78,7 @@ export default function AvatarUploader({
 
   // Resync l'aperçu si le parent change currentUrl (ex: après DELETE)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPreviewUrl(currentUrl || null);
   }, [currentUrl]);
 

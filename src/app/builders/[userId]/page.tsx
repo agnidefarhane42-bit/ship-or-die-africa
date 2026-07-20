@@ -206,7 +206,7 @@ export default async function BuilderProfilePage({ params }: Props) {
       <section className="px-4 sm:px-8 pb-12 max-w-4xl mx-auto">
         <h2 className="text-xl font-black mb-6 text-center">🌿 Feuilles débloquées</h2>
         {allTrophyTypes.size === 0 ? (
-          <p className="text-center text-base-content/40 text-sm">Aucune feuille pour l'instant — le baobab pousse 🌱</p>
+          <p className="text-center text-base-content/40 text-sm">Aucune feuille pour l&apos;instant — le baobab pousse 🌱</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {trophyOrder
@@ -231,7 +231,7 @@ export default async function BuilderProfilePage({ params }: Props) {
         <h2 className="text-xl font-black mb-6 text-center">🌰 Projets shippés</h2>
         {publicProjects.length === 0 ? (
           <p className="text-center text-base-content/40 text-sm">
-            Aucun projet public pour l'instant. Le premier fruit n'est pas encore tombé 🌱
+            Aucun projet public pour l&apos;instant. Le premier fruit n&apos;est pas encore tombé 🌱
           </p>
         ) : (
           <div className="grid sm:grid-cols-2 gap-6">

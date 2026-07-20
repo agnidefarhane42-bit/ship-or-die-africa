@@ -27,8 +27,24 @@ export async function GET() {
       },
     });
 
+    interface LeaderboardBuilder {
+      id: string;
+      name: string;
+      project: string;
+      commits: number;
+      day: number;
+      streak: number;
+      shipped: boolean;
+      overboard: boolean;
+      trophies: number;
+      githubUsername: string | null;
+      githubVerified: boolean;
+      avatarUrl: string | null;
+      image: string | null;
+    }
+
     const builders = users
-      .map((u) => {
+      .map((u): LeaderboardBuilder | null => {
         // Priorité : mission IN_PROGRESS, sinon la plus récente
         const mission =
           u.missions.find((m) => m.status === "IN_PROGRESS") || u.missions[0];
@@ -60,8 +76,8 @@ export async function GET() {
           image: u.image,
         };
       })
-      .filter(Boolean)
-      .sort((a: any, b: any) => {
+      .filter((b): b is LeaderboardBuilder => !!b)
+      .sort((a, b) => {
         if (a.overboard && !b.overboard) return 1;
         if (!a.overboard && b.overboard) return -1;
         return b.commits - a.commits;

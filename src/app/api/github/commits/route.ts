@@ -27,7 +27,18 @@ export async function GET(req: NextRequest) {
 
     const commits = await res.json();
     
-    const formatted = commits.map((c: any) => ({
+    interface GitHubCommit {
+      sha?: string;
+      commit?: {
+        message?: string;
+        author?: {
+          date?: string;
+          name?: string;
+        };
+      };
+    }
+
+    const formatted = commits.map((c: GitHubCommit) => ({
       sha: c.sha?.substring(0, 7),
       message: c.commit?.message?.split("\n")[0],
       date: c.commit?.author?.date,

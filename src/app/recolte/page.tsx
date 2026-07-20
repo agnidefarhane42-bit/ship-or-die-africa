@@ -67,7 +67,7 @@ export default async function RecoltePage({ searchParams }: Props) {
           <div className="card-glow rounded-2xl p-12 text-center max-w-lg mx-auto">
             <div className="text-5xl mb-4">🌱</div>
             <p className="text-base-content/60 text-sm">
-              Le premier fruit n'est pas encore tombé de l'arbre. Reviens bientôt.
+              Le premier fruit n&apos;est pas encore tombé de l&apos;arbre. Reviens bientôt.
             </p>
           </div>
         ) : (

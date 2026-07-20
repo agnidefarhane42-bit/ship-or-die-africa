@@ -76,7 +76,7 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-6 max-w-3xl">
       <h1 className="text-2xl sm:text-3xl font-black">📈 Leaderboard</h1>
-      <p className="text-base-content/50 text-sm">Classement par nombre de commits. Le premier à shipper gagne la feuille "Premier au Cercle" 🌅</p>
+      <p className="text-base-content/50 text-sm">Classement par nombre de commits. Le premier à shipper gagne la feuille &quot;Premier au Cercle&quot; 🌅</p>
 
       {builders.length === 0 ? (
         <div className="card-glow rounded-2xl p-8 text-center">
@@ -177,7 +177,7 @@ export default function LeaderboardPage() {
             <div className="shame-card rounded-2xl p-6">
               <h2 className="font-bold text-lg text-error mb-3">🥀 In Memoriam</h2>
               <p className="text-sm text-base-content/50">
-                Ceux qui n'ont pas pu faire pousser leur projet à temps. On se souvient d'eux. Ils peuvent revenir dans une prochaine cohorte.
+                Ceux qui n&apos;ont pas pu faire pousser leur projet à temps. On se souvient d&apos;eux. Ils peuvent revenir dans une prochaine cohorte.
               </p>
               <div className="mt-4 space-y-3">
                 {overboardBuilders.map((b, i) => (
