@@ -30,11 +30,19 @@ export default function TropheesPage() {
 
     (async () => {
       try {
-        // Le backend utilise déjà session.user.id — pas besoin de ?userId=
         const res = await fetch("/api/missions");
         const data = await res.json();
-        const trophies: Trophy[] = data.missions?.[0]?.trophies || [];
-        setUnlockedTypes(trophies.map((t) => t.type));
+        // ── Agréger les trophées de TOUTES les missions ──
+        // Avant: data.missions?.[0]?.trophies (ne montrait que la 1ère mission)
+        // Maintenant: on parcourt toutes les missions pour collecter tous les types
+        const missions = data.missions || [];
+        const types = new Set<string>();
+        for (const m of missions) {
+          for (const t of (m.trophies || [])) {
+            types.add(t.type);
+          }
+        }
+        setUnlockedTypes(Array.from(types));
       } catch (err) {
         console.error("Feuilles load error:", err);
       } finally {
