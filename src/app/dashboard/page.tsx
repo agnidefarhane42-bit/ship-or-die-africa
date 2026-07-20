@@ -35,6 +35,26 @@ type Builder = {
   trophies: number;
 };
 
+/** Jour civil Africa/Lagos — aligné avec commitsByDay (sync-mission). */
+function toLagosDayKey(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Lagos",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function addDaysToKey(dayKey: string, n: number): string {
+  const [y, m, d] = dayKey.split("-").map(Number);
+  const utc = Date.UTC(y, m - 1, d) + n * 86_400_000;
+  const dt = new Date(utc);
+  const yy = dt.getUTCFullYear();
+  const mm = String(dt.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(dt.getUTCDate()).padStart(2, "0");
+  return `${yy}-${mm}-${dd}`;
+}
+
 export default function DashboardPage() {
   const { data: session, status } = useSession();
   const [mission, setMission] = useState<Mission | null>(null);
@@ -48,19 +68,19 @@ export default function DashboardPage() {
 
     (async () => {
       try {
-        // Charger la mission de l'utilisateur (IN_PROGRESS en premier grâce au backend)
         const missionRes = await fetch(`/api/missions`);
         const missionData = await missionRes.json();
         if (missionData.missions?.length > 0) {
           setAllMissions(missionData.missions);
-          // Chercher une mission IN_PROGRESS, sinon prendre la plus récente
           const active = missionData.missions.find((m: Mission) => m.status === "IN_PROGRESS");
           setMission(active || missionData.missions[0]);
         }
 
-        // Charger les commits GitHub si l'utilisateur a un repo (pour la liste détaillée uniquement)
-        if (missionData.missions?.[0]?.repoUrl) {
-          const repoMatch = missionData.missions[0].repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+        const activeOrFirst =
+          missionData.missions?.find((m: Mission) => m.status === "IN_PROGRESS") ||
+          missionData.missions?.[0];
+        if (activeOrFirst?.repoUrl) {
+          const repoMatch = activeOrFirst.repoUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
           if (repoMatch) {
             const [, username, repo] = repoMatch;
             const commitsRes = await fetch(`/api/github/commits?username=${username}&repo=${repo}`);
@@ -71,7 +91,6 @@ export default function DashboardPage() {
           }
         }
 
-        // Charger le leaderboard
         const lbRes = await fetch("/api/leaderboard");
         if (lbRes.ok) {
           const lbData = await lbRes.json();
@@ -94,15 +113,21 @@ export default function DashboardPage() {
   }
 
   const now = new Date();
-  const day = mission ? Math.min(30, Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1) : 0;
-  const daysLeft = mission ? Math.max(0, Math.floor((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
+  const day = mission
+    ? Math.min(30, Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1)
+    : 0;
+  const daysLeft = mission
+    ? Math.max(0, Math.floor((new Date(mission.deadline).getTime() - now.getTime()) / 86400000))
+    : 30;
   const progress = mission ? Math.min(100, Math.round((day / 30) * 100)) : 0;
-  const trophyCount = mission?.trophies?.length || 0;
+  // Trophées de toutes les missions (aligné page /trophees)
+  const allTrophyTypes = new Set(
+    allMissions.flatMap((m) => (m.trophies || []).map((t) => t.type))
+  );
+  const trophyCount = allTrophyTypes.size;
   const shippedCount = allMissions.filter((m) => m.status === "SHIPPED").length;
-  // Utiliser le vrai total synchronisé (pas seulement les commits récents de l'API)
   const commitCount = mission?.commitCount ?? 0;
 
-  // Heatmap basée sur commitsByDay (vraies données) ou toute grise si absent
   const heatColors = ["bg-base-content/5", "bg-success/20", "bg-success/40", "bg-success/60", "bg-success"];
 
   function getHeatLevel(commitsOnDay: number | undefined): number {
@@ -113,13 +138,12 @@ export default function DashboardPage() {
     return 4;
   }
 
+  // Heatmap : clés Lagos (comme sync-mission), pas UTC
+  const startKey = mission ? toLagosDayKey(new Date(mission.startedAt)) : "";
   const heatmap = Array.from({ length: 30 }, (_, i) => {
     if (i >= day) return 0;
-    if (!mission?.commitsByDay) return 0; // pas encore synchronisé → gris
-    // Calculer la date du jour i+1 de la mission
-    const dayDate = new Date(mission.startedAt);
-    dayDate.setDate(dayDate.getDate() + i);
-    const key = dayDate.toISOString().substring(0, 10);
+    if (!mission?.commitsByDay || !startKey) return 0;
+    const key = addDaysToKey(startKey, i);
     return getHeatLevel(mission.commitsByDay[key]);
   });
 
@@ -131,19 +155,20 @@ export default function DashboardPage() {
     { type: "SHIPPED", icon: "🌰", label: "Fruit récolté" },
     { type: "EARLY_BIRD", icon: "🌅", label: "Premier au Cercle" },
   ];
-  const userTrophies = mission?.trophies?.map((t) => t.type) || [];
+  const userTrophies = Array.from(allTrophyTypes);
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* HEADER */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black">Salut bâtisseur 👋</h1>
           <p className="text-base-content/50 text-sm mt-1">
-            {mission ? `Jour ${day} sur 30 · ${daysLeft} jours restants` : "Aucune mission active"}
+            {mission && mission.status === "IN_PROGRESS"
+              ? `Jour ${day} sur 30 · ${daysLeft} jours restants`
+              : "Aucune mission active"}
           </p>
         </div>
-        {mission && (
+        {mission && mission.status === "IN_PROGRESS" && (
           <div className="badge badge-warning badge-lg gap-2 font-bold">⏰ {daysLeft} jour{daysLeft > 1 ? "s" : ""}</div>
         )}
       </div>
@@ -167,7 +192,6 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* STATS CARDS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="card-glow rounded-2xl p-5">
               <div className="text-3xl mb-2">⏰</div>
@@ -191,7 +215,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* PROGRESSION BAR */}
           <div className="card-glow rounded-2xl p-6">
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-bold text-lg">📊 Progression de ta mission</h2>
@@ -207,7 +230,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* HEATMAP */}
           <div className="card-glow rounded-2xl p-6">
             <h2 className="font-bold text-lg mb-4">🔥 Heatmap des commits</h2>
             <div className="flex gap-1 flex-wrap">
@@ -227,9 +249,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* TWO COLUMNS */}
           <div className="grid sm:grid-cols-2 gap-6">
-            {/* MISSION */}
             <div className="card-glow rounded-2xl p-6">
               <h2 className="font-bold text-lg mb-4">🎯 Ma Mission</h2>
               <div className="space-y-3">
@@ -244,13 +264,13 @@ export default function DashboardPage() {
                 {mission.repoUrl && (
                   <div className="flex justify-between">
                     <span className="text-base-content/50 text-sm">Repo</span>
-                    <a href={mission.repoUrl} target="_blank" className="text-info text-sm hover:underline">GitHub →</a>
+                    <a href={mission.repoUrl} target="_blank" rel="noreferrer" className="text-info text-sm hover:underline">GitHub →</a>
                   </div>
                 )}
                 {mission.url && (
                   <div className="flex justify-between">
                     <span className="text-base-content/50 text-sm">URL</span>
-                    <a href={mission.url} target="_blank" className="text-info text-sm hover:underline">{mission.url}</a>
+                    <a href={mission.url} target="_blank" rel="noreferrer" className="text-info text-sm hover:underline">{mission.url}</a>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -261,7 +281,6 @@ export default function DashboardPage() {
               <a href="/dashboard/mission" className="btn btn-ghost btn-sm mt-4 w-full">Modifier ma mission</a>
             </div>
 
-            {/* RECENT COMMITS */}
             <div className="card-glow rounded-2xl p-6">
               <h2 className="font-bold text-lg mb-4">🔥 Activité GitHub</h2>
               {commits.length > 0 ? (
@@ -286,7 +305,6 @@ export default function DashboardPage() {
         </>
       )}
 
-      {/* TROPHÉES */}
       <div className="card-glow rounded-2xl p-6">
         <h2 className="font-bold text-lg mb-4">🌿 Feuilles ({trophyCount}/6)</h2>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-4">
@@ -302,7 +320,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* LEADERBOARD */}
       {leaderboard.length > 0 && (
         <div className="card-glow rounded-2xl p-6">
           <h2 className="font-bold text-lg mb-4">📈 Leaderboard de la cohorte</h2>
