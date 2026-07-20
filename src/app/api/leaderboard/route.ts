@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    // Select explicite — ne charge jamais password/email/telegramChatId
     const users = await prisma.user.findMany({
       where: { role: "USER" },
       select: {
@@ -18,6 +17,7 @@ export async function GET() {
             status: true,
             title: true,
             startedAt: true,
+            deadline: true,
             commitCount: true,
             currentStreak: true,
             trophies: { select: { id: true, type: true } },
@@ -43,20 +43,26 @@ export async function GET() {
       image: string | null;
     }
 
+    const now = Date.now();
+
     const builders = users
       .map((u): LeaderboardBuilder | null => {
-        // Priorité : mission IN_PROGRESS, sinon la plus récente
         const mission =
           u.missions.find((m) => m.status === "IN_PROGRESS") || u.missions[0];
         if (!mission) return null;
 
-        const day = Math.floor(
-          (Date.now() - mission.startedAt.getTime()) / (1000 * 60 * 60 * 24)
+        // Jour 1 = premier jour civil (aligné dashboard)
+        const day = Math.min(
+          30,
+          Math.floor((now - mission.startedAt.getTime()) / (1000 * 60 * 60 * 24)) + 1
         );
-        const isOverboard = day > 30 && mission.status !== "SHIPPED";
-        const trophies = mission.trophies?.length || 0;
 
-        // Ne calculer les commits/streak que pour les utilisateurs vérifiés GitHub
+        // Overboard = FAILED ou deadline dépassée sans SHIPPED (respecte les pauses)
+        const isOverboard =
+          mission.status === "FAILED" ||
+          (mission.status !== "SHIPPED" && now > mission.deadline.getTime());
+
+        const trophies = mission.trophies?.length || 0;
         const commits = u.githubVerified ? mission.commitCount : 0;
         const streak = u.githubVerified ? mission.currentStreak : 0;
 
@@ -65,7 +71,7 @@ export async function GET() {
           name: u.name || "Anonyme",
           project: mission.title,
           commits,
-          day: Math.min(day, 30),
+          day,
           streak,
           shipped: mission.status === "SHIPPED",
           overboard: isOverboard,
