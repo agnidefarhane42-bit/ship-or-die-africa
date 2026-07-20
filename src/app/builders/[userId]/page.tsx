@@ -3,6 +3,7 @@ import { getAvatarUrl } from "@/lib/avatar";
 import { getRank } from "@/lib/rank";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import PublicNavbar from "@/components/PublicNavbar";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -153,19 +154,7 @@ export default async function BuilderProfilePage({ params }: Props) {
 
   return (
     <main className="hero-bg min-h-screen">
-      {/* NAVBAR */}
-      <nav className="navbar px-4 sm:px-8 py-4 max-w-6xl mx-auto">
-        <div className="flex-1">
-          <Link href="/" className="text-2xl font-black tracking-tight">
-            <img src="/logo.png" alt="Logo" className="w-7 h-7 inline-block object-contain align-middle" /> <span className="gold-text">Ship or Die</span>
-            <span className="text-base-content/60 text-sm ml-1">Africa</span>
-          </Link>
-        </div>
-        <div className="flex-none gap-2">
-          <Link href="/recolte" className="btn btn-ghost btn-sm text-base-content/70">🌰 La Récolte</Link>
-          <Link href="/login" className="btn btn-gold btn-sm">Se connecter</Link>
-        </div>
-      </nav>
+      <PublicNavbar links={[{ href: "/recolte", label: "🌰 La Récolte" }]} />
 
       {/* HERO — Carte de visite */}
       <section className="px-4 sm:px-8 pt-8 pb-12 max-w-4xl mx-auto">
