@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
 
       // ── Calcul des jours restants ──
       const msLeft = mission.deadline.getTime() - now.getTime();
-      const daysLeft = Math.ceil(msLeft / (1000 * 60 * 60 * 24));
+      const daysLeft = Math.floor(msLeft / (1000 * 60 * 60 * 24));
       const safeTitle = escapeHtml(mission.title);
 
       // ── Rappel quotidien (si autorisé) ──

@@ -94,8 +94,8 @@ export default function DashboardPage() {
   }
 
   const now = new Date();
-  const day = mission ? Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1 : 0;
-  const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
+  const day = mission ? Math.min(30, Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1) : 0;
+  const daysLeft = mission ? Math.max(0, Math.floor((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
   const progress = mission ? Math.min(100, Math.round((day / 30) * 100)) : 0;
   const trophyCount = mission?.trophies?.length || 0;
   const shippedCount = allMissions.filter((m) => m.status === "SHIPPED").length;
