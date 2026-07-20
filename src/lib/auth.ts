@@ -44,6 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
+          role: user.role,
           telegramChatId: user.telegramChatId,
         };
       },
@@ -124,13 +125,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
+        token.role = (user as any).role ?? "USER";
         if (user.telegramChatId) {
           token.telegramChatId = user.telegramChatId;
         }
       }
 
-      // Charger telegramChatId depuis la DB si absent (ex: après liaison Telegram)
-      if (token.id && (trigger === "update" || !token.telegramChatId)) {
+      // Charger telegramChatId + role depuis la DB si absent (ex: après liaison Telegram)
+      if (token.id && (trigger === "update" || !token.telegramChatId || !token.role)) {
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.id },
@@ -138,12 +140,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               telegramChatId: true,
               githubUsername: true,
               githubVerified: true,
+              role: true,
             },
           });
           if (dbUser) {
             token.telegramChatId = dbUser.telegramChatId ?? null;
             if (dbUser.githubUsername) token.githubUsername = dbUser.githubUsername;
             if (dbUser.githubVerified) token.githubVerified = true;
+            token.role = dbUser.role;
           }
         } catch {
           // silencieux
@@ -168,6 +172,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               },
             });
           }
+          // Charger le role depuis la DB après login GitHub
+          if (dbUser) {
+            token.role = dbUser.role;
+          }
         }
       }
       return token;
@@ -177,6 +185,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = token.name as string;
+        session.user.role = token.role ?? "USER";
         session.user.githubUsername = token.githubUsername ?? null;
         session.user.githubVerified = token.githubVerified ?? false;
         session.user.telegramChatId = token.telegramChatId ?? null;

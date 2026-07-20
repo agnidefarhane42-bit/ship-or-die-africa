@@ -4,6 +4,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      role?: string;
       githubUsername?: string | null;
       githubVerified?: boolean;
       telegramChatId?: string | null;
@@ -11,6 +12,7 @@ declare module "next-auth" {
   }
 
   interface User {
+    role?: string;
     githubUsername?: string | null;
     githubVerified?: boolean;
     telegramChatId?: string | null;
@@ -20,6 +22,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
+    role?: string;
     githubUsername?: string | null;
     githubVerified?: boolean;
     telegramChatId?: string | null;
@@ -29,6 +32,7 @@ declare module "next-auth/jwt" {
 declare module "@auth/core/jwt" {
   interface JWT {
     id?: string;
+    role?: string;
     githubUsername?: string | null;
     githubVerified?: boolean;
     telegramChatId?: string | null;

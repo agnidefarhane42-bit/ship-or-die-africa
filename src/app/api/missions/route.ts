@@ -43,16 +43,17 @@ export async function POST(req: NextRequest) {
 
     // ── Gate de paiement ──
     // Un utilisateur doit avoir au moins un Payment PAID pour créer une mission.
-    // Soft alternative possible : autoriser la création mais bloquer le ship.
-    // Choix actuel : hard gate pour garder l'intégrité de la cohorte.
-    const paid = await prisma.payment.findFirst({
-      where: { userId: session.user.id, status: "PAID" },
-    });
-    if (!paid) {
-      return NextResponse.json(
-        { error: "Paiement requis pour créer une mission. Rejoins le Cercle d'abord." },
-        { status: 402 }
-      );
+    // Bypass pour l'admin (créateur du site) — accès gratuit.
+    if (session.user.role !== "ADMIN") {
+      const paid = await prisma.payment.findFirst({
+        where: { userId: session.user.id, status: "PAID" },
+      });
+      if (!paid) {
+        return NextResponse.json(
+          { error: "Paiement requis pour créer une mission. Rejoins le Cercle d'abord." },
+          { status: 402 }
+        );
+      }
     }
 
     // ── Empêcher la création si une mission IN_PROGRESS existe déjà ──
