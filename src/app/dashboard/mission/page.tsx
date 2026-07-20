@@ -33,7 +33,6 @@ export default function MissionPage() {
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
 
-  // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [repoUrl, setRepoUrl] = useState("");
@@ -41,7 +40,6 @@ export default function MissionPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Récolte form state
   const [showRecolteForm, setShowRecolteForm] = useState(false);
   const [tagline, setTagline] = useState("");
   const [screenshotUrl, setScreenshotUrl] = useState("");
@@ -93,10 +91,55 @@ export default function MissionPage() {
       }
       setMission(data);
       setCreating(false);
+      setSubmitting(false);
     } catch {
       setError("Erreur réseau");
       setSubmitting(false);
     }
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mission) return;
+    setActionError("");
+    setActionSuccess("");
+    setSubmitting(true);
+
+    try {
+      const res = await fetch("/api/missions", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          missionId: mission.id,
+          title: title.trim(),
+          description,
+          repoUrl: repoUrl || null,
+          url: url || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setActionError(data.error || "Erreur lors de la sauvegarde");
+      } else {
+        setMission(data.mission);
+        setEditing(false);
+        setActionSuccess("✅ Mission mise à jour");
+        setTimeout(() => setActionSuccess(""), 3000);
+      }
+    } catch {
+      setActionError("Erreur réseau");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (!mission) return;
+    setTitle(mission.title);
+    setDescription(mission.description || "");
+    setRepoUrl(mission.repoUrl || "");
+    setUrl(mission.url || "");
+    setEditing(true);
   };
 
   const handleUsePause = async () => {
@@ -137,8 +180,6 @@ export default function MissionPage() {
 
   const handleShip = async () => {
     if (!mission) return;
-
-    // Ouvrir le formulaire Récolte au lieu de confirmer directement
     setShowRecolteForm(true);
     setTagline(mission.tagline || "");
     setScreenshotUrl(mission.screenshotUrl || "");
@@ -238,17 +279,20 @@ export default function MissionPage() {
   }
 
   const now = new Date();
-  const day = mission ? Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1 : 0;
-  const daysLeft = mission ? Math.max(0, Math.ceil((new Date(mission.deadline).getTime() - now.getTime()) / 86400000)) : 30;
+  const day = mission
+    ? Math.min(30, Math.floor((now.getTime() - new Date(mission.startedAt).getTime()) / 86400000) + 1)
+    : 0;
+  const daysLeft = mission
+    ? Math.max(0, Math.floor((new Date(mission.deadline).getTime() - now.getTime()) / 86400000))
+    : 30;
   const pauseUsed = mission?.pauseDaysUsed ?? 0;
   const pauseLeft = Math.max(0, 3 - pauseUsed);
 
-  // ── Mission SHIPPED : résumé + relance ──
   if (mission && mission.status === "SHIPPED" && !creating) {
     const shippedDate = mission.shippedAt ? new Date(mission.shippedAt) : null;
     const startDate = new Date(mission.startedAt);
     const shipDays = shippedDate
-      ? Math.max(1, Math.ceil((shippedDate.getTime() - startDate.getTime()) / 86400000))
+      ? Math.max(1, Math.floor((shippedDate.getTime() - startDate.getTime()) / 86400000) + 1)
       : 0;
     const trophyCount = mission.trophies?.length || 0;
     const commits = mission.commitCount ?? 0;
@@ -256,15 +300,12 @@ export default function MissionPage() {
     return (
       <div className="space-y-6 max-w-3xl">
         <h1 className="text-2xl sm:text-3xl font-black">🎯 Ma Mission</h1>
-
         <div className="card-glow rounded-2xl p-8 text-center border border-success/30">
           <div className="text-5xl mb-4">🌰</div>
           <h2 className="text-2xl font-black mb-2">Mission accomplie !</h2>
           <p className="text-base-content/60 text-sm mb-6">
             <b>{mission.title}</b> a été shippé en {shipDays} jour{shipDays > 1 ? "s" : ""}.
           </p>
-
-          {/* Résumé */}
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="card-glow rounded-2xl p-4">
               <p className="text-2xl font-black gold-text">{shipDays}</p>
@@ -279,11 +320,9 @@ export default function MissionPage() {
               <p className="text-xs text-base-content/40 mt-1">feuilles</p>
             </div>
           </div>
-
           {mission.tagline && (
-            <p className="text-base-content/50 text-sm italic mb-4">&quot;{mission.tagline}&quot;</p>
+            <p className="text-base-content/50 text-sm italic mb-4">"{mission.tagline}"</p>
           )}
-
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => {
@@ -309,7 +348,6 @@ export default function MissionPage() {
     );
   }
 
-  // ── Mission FAILED : message + relance ──
   if (mission && mission.status === "FAILED" && !creating) {
     return (
       <div className="space-y-6 max-w-3xl">
@@ -318,7 +356,7 @@ export default function MissionPage() {
           <div className="text-5xl mb-4">🥀</div>
           <h2 className="text-xl font-bold mb-2">Racines coupées</h2>
           <p className="text-base-content/50 text-sm mb-6">
-            <b>{mission.title}</b> n&apos;a pas pu être shippé dans les 30 jours. Ça arrive aux meilleurs bâtisseurs.
+            <b>{mission.title}</b> n'a pas pu être shippé dans les 30 jours. Ça arrive aux meilleurs bâtisseurs.
           </p>
           <button
             onClick={() => {
@@ -331,14 +369,13 @@ export default function MissionPage() {
             }}
             className="btn btn-pirate"
           >
-            🌱 Retenter l&apos;aventure
+            🌱 Retenter l'aventure
           </button>
         </div>
       </div>
     );
   }
 
-  // Si pas de mission → formulaire de création
   if (!mission && !creating) {
     return (
       <div className="space-y-6 max-w-3xl">
@@ -353,8 +390,7 @@ export default function MissionPage() {
     );
   }
 
-  // Formulaire de création
-  if (creating || (!mission && creating)) {
+  if (creating) {
     return (
       <div className="space-y-6 max-w-3xl">
         <h1 className="text-2xl sm:text-3xl font-black">🎯 Créer ma mission</h1>
@@ -403,7 +439,6 @@ export default function MissionPage() {
         <div className="alert alert-success"><span>{actionSuccess}</span></div>
       )}
 
-      {/* Countdown */}
       <div className="card-glow rounded-2xl p-6 text-center">
         <p className="text-base-content/50 text-sm mb-2">Deadline</p>
         <p className="text-4xl font-black text-error mb-2">{daysLeft} jours</p>
@@ -414,57 +449,91 @@ export default function MissionPage() {
           <div className="h-full bg-gradient-to-r from-error to-warning" style={{ width: `${progress}%` }} />
         </div>
         {mission.status === "IN_PROGRESS" && pauseLeft > 0 && (
-          <button
-            onClick={handleUsePause}
-            disabled={pausing}
-            className="btn btn-ghost btn-sm mt-4"
-          >
+          <button onClick={handleUsePause} disabled={pausing} className="btn btn-ghost btn-sm mt-4">
             {pausing ? "..." : `⏸ Utiliser 1 jour de pause (${pauseLeft} restant${pauseLeft > 1 ? "s" : ""})`}
           </button>
         )}
       </div>
 
-      {/* Mission details */}
       <div className="card-glow rounded-2xl p-6 space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="font-bold text-lg">Détails de la mission</h2>
-          <button onClick={() => setEditing(!editing)} className="btn btn-ghost btn-sm">{editing ? "Annuler" : "✏️ Modifier"}</button>
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between border-b border-base-content/10 pb-2">
-            <span className="text-base-content/50 text-sm">Projet</span>
-            <span className="font-bold">{mission.title}</span>
-          </div>
-          <div className="flex justify-between border-b border-base-content/10 pb-2">
-            <span className="text-base-content/50 text-sm">Description</span>
-            <span className="text-sm text-right max-w-xs">{mission.description || "—"}</span>
-          </div>
-          <div className="flex justify-between border-b border-base-content/10 pb-2">
-            <span className="text-base-content/50 text-sm">Repo</span>
-            {mission.repoUrl ? <a href={mission.repoUrl} target="_blank" className="text-info text-sm hover:underline">{mission.repoUrl}</a> : <span className="text-base-content/30 text-sm">Non connecté</span>}
-          </div>
-          <div className="flex justify-between border-b border-base-content/10 pb-2">
-            <span className="text-base-content/50 text-sm">URL</span>
-            {mission.url ? <a href={mission.url} target="_blank" className="text-info text-sm hover:underline">{mission.url}</a> : <span className="text-base-content/30 text-sm">Pas encore déployé</span>}
-          </div>
-          <div className="flex justify-between border-b border-base-content/10 pb-2">
-            <span className="text-base-content/50 text-sm">Statut</span>
-            <span className={`badge ${isShipped ? "badge-success" : mission.status === "FAILED" ? "badge-error" : "badge-warning"}`}>{mission.status}</span>
-          </div>
-          {mission.shippedAt && (
-            <div className="flex justify-between border-b border-base-content/10 pb-2">
-              <span className="text-base-content/50 text-sm">Shippé le</span>
-              <span className="text-success font-bold">{new Date(mission.shippedAt).toLocaleDateString("fr-FR")}</span>
-            </div>
+          {mission.status === "IN_PROGRESS" && (
+            <button
+              onClick={() => (editing ? setEditing(false) : startEditing())}
+              className="btn btn-ghost btn-sm"
+            >
+              {editing ? "Annuler" : "✏️ Modifier"}
+            </button>
           )}
-          <div className="flex justify-between">
-            <span className="text-base-content/50 text-sm">Deadline</span>
-            <span className="text-error font-bold">{new Date(mission.deadline).toLocaleDateString("fr-FR")}</span>
-          </div>
         </div>
+
+        {editing ? (
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <div>
+              <label className="label"><span className="label-text text-base-content/60">Nom du projet *</span></label>
+              <input type="text" required value={title} onChange={(e) => setTitle(e.target.value)} className="input input-bordered w-full bg-base-200" />
+            </div>
+            <div>
+              <label className="label"><span className="label-text text-base-content/60">Description</span></label>
+              <textarea className="textarea textarea-bordered w-full bg-base-200" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+            </div>
+            <div>
+              <label className="label"><span className="label-text text-base-content/60">Repo GitHub</span></label>
+              <input type="url" placeholder="https://github.com/username/repo" value={repoUrl} onChange={(e) => setRepoUrl(e.target.value)} className="input input-bordered w-full bg-base-200" />
+            </div>
+            <div>
+              <label className="label"><span className="label-text text-base-content/60">URL du projet (requise pour shipper)</span></label>
+              <input type="url" placeholder="https://ton-projet.vercel.app" value={url} onChange={(e) => setUrl(e.target.value)} className="input input-bordered w-full bg-base-200" />
+            </div>
+            <button type="submit" disabled={submitting} className="btn btn-warning btn-sm">
+              {submitting ? "Sauvegarde..." : "💾 Sauvegarder"}
+            </button>
+          </form>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">Projet</span>
+              <span className="font-bold">{mission.title}</span>
+            </div>
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">Description</span>
+              <span className="text-sm text-right max-w-xs">{mission.description || "—"}</span>
+            </div>
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">Repo</span>
+              {mission.repoUrl ? (
+                <a href={mission.repoUrl} target="_blank" rel="noreferrer" className="text-info text-sm hover:underline">{mission.repoUrl}</a>
+              ) : (
+                <span className="text-base-content/30 text-sm">Non connecté</span>
+              )}
+            </div>
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">URL</span>
+              {mission.url ? (
+                <a href={mission.url} target="_blank" rel="noreferrer" className="text-info text-sm hover:underline">{mission.url}</a>
+              ) : (
+                <span className="text-base-content/30 text-sm">Pas encore déployé</span>
+              )}
+            </div>
+            <div className="flex justify-between border-b border-base-content/10 pb-2">
+              <span className="text-base-content/50 text-sm">Statut</span>
+              <span className={`badge ${isShipped ? "badge-success" : mission.status === "FAILED" ? "badge-error" : "badge-warning"}`}>{mission.status}</span>
+            </div>
+            {mission.shippedAt && (
+              <div className="flex justify-between border-b border-base-content/10 pb-2">
+                <span className="text-base-content/50 text-sm">Shippé le</span>
+                <span className="text-success font-bold">{new Date(mission.shippedAt).toLocaleDateString("fr-FR")}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-base-content/50 text-sm">Deadline</span>
+              <span className="text-error font-bold">{new Date(mission.deadline).toLocaleDateString("fr-FR")}</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Lien vers la fiche publique si shippé et public */}
       {isShipped && mission.isPublic && mission.tagline && (
         <div className="card-glow rounded-2xl p-4 text-center">
           <Link href={`/recolte/${mission.id}`} className="btn btn-ghost btn-sm text-warning">
@@ -473,7 +542,6 @@ export default function MissionPage() {
         </div>
       )}
 
-      {/* Formulaire Récolte (modale inline) */}
       {showRecolteForm && (
         <div className="card-glow rounded-2xl p-6 space-y-4 border-2 border-warning/30">
           <div className="flex justify-between items-center">
@@ -483,55 +551,28 @@ export default function MissionPage() {
           <p className="text-sm text-base-content/50">
             {isShipped
               ? "Complète la fiche de ton projet pour La Récolte."
-              : "Avant de shipper, remplis la fiche de ton projet. Ça sera affiché publiquement sur La Récolte."}
+              : "Avant de shipper, remplis la fiche de ton projet."}
           </p>
           <div>
             <label className="label"><span className="label-text text-base-content/60">Tagline * (max 100 caractères)</span></label>
-            <input
-              type="text"
-              maxLength={100}
-              placeholder="Ex: Un tracker de dépenses pour vendeurs de rue"
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              className="input input-bordered w-full bg-base-200"
-            />
+            <input type="text" maxLength={100} placeholder="Ex: Un tracker de dépenses pour vendeurs de rue" value={tagline} onChange={(e) => setTagline(e.target.value)} className="input input-bordered w-full bg-base-200" />
             <p className="text-xs text-base-content/30 mt-1">{tagline.length}/100</p>
           </div>
           <div>
             <label className="label"><span className="label-text text-base-content/60">Screenshot URL (optionnel)</span></label>
-            <input
-              type="url"
-              placeholder="https://imgur.com/..."
-              value={screenshotUrl}
-              onChange={(e) => setScreenshotUrl(e.target.value)}
-              className="input input-bordered w-full bg-base-200"
-            />
-            <p className="text-xs text-base-content/30 mt-1">Lien direct vers une image hébergée ailleurs</p>
+            <input type="url" placeholder="https://imgur.com/..." value={screenshotUrl} onChange={(e) => setScreenshotUrl(e.target.value)} className="input input-bordered w-full bg-base-200" />
           </div>
           <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              className="checkbox checkbox-warning"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
-            />
+            <input type="checkbox" className="checkbox checkbox-warning" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
             <span className="text-sm">Afficher mon projet sur La Récolte</span>
           </label>
           <div className="flex gap-3">
             {!isShipped ? (
-              <button
-                onClick={handleShipSubmit}
-                disabled={shipping}
-                className="btn btn-success flex-1"
-              >
+              <button onClick={handleShipSubmit} disabled={shipping} className="btn btn-success flex-1">
                 {shipping ? "Ship en cours..." : "🌰 Marquer comme shippée"}
               </button>
             ) : (
-              <button
-                onClick={handleRecolteUpdate}
-                disabled={recolteSaving}
-                className="btn btn-warning flex-1"
-              >
+              <button onClick={handleRecolteUpdate} disabled={recolteSaving} className="btn btn-warning flex-1">
                 {recolteSaving ? "Sauvegarde..." : "💾 Mettre à jour la fiche"}
               </button>
             )}
@@ -540,42 +581,31 @@ export default function MissionPage() {
         </div>
       )}
 
-      {/* Bouton "Compléter ma fiche Récolte" si shippé sans tagline */}
       {needsRecolteCompletion && !showRecolteForm && (
         <div className="card-glow rounded-2xl p-6 text-center">
           <div className="text-4xl mb-3">🌰</div>
           <h2 className="font-bold text-lg mb-2">Ta fiche Récolte est incomplète</h2>
-          <p className="text-sm text-base-content/50 mb-4">
-            Ajoute une tagline et un screenshot pour que ton projet apparaisse bien sur La Récolte.
-          </p>
-          <button
-            onClick={() => setShowRecolteForm(true)}
-            className="btn btn-pirate"
-          >
-            🌰 Compléter ma fiche Récolte
-          </button>
+          <button onClick={() => setShowRecolteForm(true)} className="btn btn-pirate">🌰 Compléter ma fiche Récolte</button>
         </div>
       )}
 
-      {/* Ship button */}
       {canShip && !showRecolteForm && (
         <div className="card-glow rounded-2xl p-6 text-center">
           <div className="text-4xl mb-3">🌰</div>
           <h2 className="font-bold text-lg mb-2">Prêt à récolter ton fruit ?</h2>
-          <p className="text-sm text-base-content/50 mb-4">
-            Tu as une URL en ligne. Marque ta mission comme shippée pour valider ton 30 jours.
-          </p>
-          <button
-            onClick={handleShip}
-            disabled={shipping}
-            className="btn btn-success"
-          >
+          <p className="text-sm text-base-content/50 mb-4">Tu as une URL en ligne. Marque ta mission comme shippée.</p>
+          <button onClick={handleShip} disabled={shipping} className="btn btn-success">
             {shipping ? "Ship en cours..." : "🌰 Marquer comme shippée"}
           </button>
         </div>
       )}
 
-      {/* Checklist */}
+      {mission.status === "IN_PROGRESS" && !mission.url && !editing && (
+        <div className="alert alert-warning text-sm">
+          <span>Ajoute l'URL de ton projet (✏️ Modifier) pour pouvoir shipper.</span>
+        </div>
+      )}
+
       <div className="card-glow rounded-2xl p-6">
         <h2 className="font-bold text-lg mb-4">✅ Checklist de validation</h2>
         <div className="space-y-3">
@@ -594,10 +624,9 @@ export default function MissionPage() {
         </div>
       </div>
 
-      {/* DANGER ZONE */}
       <div className="shame-card rounded-2xl p-6">
         <h2 className="font-bold text-lg text-error mb-2">⚠️ Zone de danger</h2>
-        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué &quot;racines coupées&quot;.</p>
+        <p className="text-sm text-base-content/50 mb-4">Si tu ne ships pas avant le {new Date(mission.deadline).toLocaleDateString("fr-FR")}, tu es marqué "racines coupées".</p>
         {mission.status === "IN_PROGRESS" ? (
           <p className="text-xs text-base-content/40">Tu peux abandonner depuis la page Paramètres.</p>
         ) : (
